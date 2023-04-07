@@ -1,0 +1,46 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+#define ll long long
+ 
+vector<int> p(1001),rang(1001);
+ 
+void MakeSet(int v)
+{
+    p[v]=v;
+    rang[v]=0;
+}
+int Find(int v)
+{
+    if (p[v]==v){
+        return v;
+    }
+    return p[v]=Find(p[v]);
+}
+bool Union(int v, int u)
+{
+    v=Find(v);
+    u=Find(u);
+    if (v!=u){
+        if (rang[v]<rang[u]){
+            swap(u,v);
+        }
+        p[u]=v;
+        if (rang[v]==rang[u]){
+            rang[v]++;
+        }
+        return true;
+    }
+    return false;
+}
+
+int main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    int n,m;
+    cin >> n;
+    for (int i = 0; i < n; ++i) {
+        MakeSet(i);
+    }
+}
