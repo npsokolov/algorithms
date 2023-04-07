@@ -1,0 +1,57 @@
+ #include <bits/stdc++.h>
+
+using namespace std;
+unordered_map<int,unordered_multiset<int>> mp;
+vector<bool> used(1e5+10,false),used1(1e5+10,false);
+vector<vector<int>> g(1e5+10),comps,ans;
+vector<int> path(1e5+10);
+unordered_map<int,unordered_map<int,unordered_set<int>>> edges_;
+int start = -1;
+vector<int> cycle;
+
+void EulerianPath(int start){
+    stack<int> q;
+    q.push(start);
+    while (!q.empty()){
+        int v=q.top();
+        if (!mp[v].empty()) {
+            int u = *mp[v].begin();
+            q.push(u);
+            mp[v].erase(mp[v].find(u));
+            mp[u].erase(mp[u].find(v));
+        }else{
+            cycle.push_back(v);
+            q.pop();
+        }
+    }
+}
+
+void EulerianPath(vector<int>& comp){
+    EulerianPath(comp[0]);
+}
+
+
+
+int main()
+{
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    int n=0,m,u,v;
+    cin >> m;
+    for (int i = 0; i < m; ++i) {
+        cin >> u >> v;
+        if (u>v){
+            swap(u,v);
+        }
+        edges_[u][v].insert(i+1);
+        mp[u].insert(v);
+        mp[v].insert(u);
+        n=max(n,max(u,v));
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    
+
+
+    return 0;
+}

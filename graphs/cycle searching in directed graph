@@ -1,0 +1,59 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+vector<int> color(2e5+100,0);
+vector<vector<int>> g(2e5+100);
+vector<int> path(2e5+100);
+int cycle_begin=-1,cycle_end=-1;
+bool dfs(int v){
+    auto& g1 = g;
+    auto& c = color;
+    color[v]=1;
+    for (int u : g[v]){
+        if (color[u]==0){
+            path[u]=v;
+            if (dfs(u)){
+                return true;
+            }
+        }else if (color[u]==1){
+            cycle_begin=u;
+            cycle_end=v;
+            return true;
+        }
+    }
+    color[v]=2;
+    return false;
+}
+
+
+int main()
+{
+    int n,m,u,v;
+    cin >> n >> m;
+    for (int i = 0; i < m; ++i) {
+        cin >> u >> v;
+        g[u].push_back(v);
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (color[i]==0) {
+            if (dfs(i)){
+                vector<int> ans;
+                cout << "YES" << endl;
+                int x=cycle_end;
+                while (x!=cycle_begin){
+                    ans.push_back(x);
+                    x=path[x];
+                }
+                ans.push_back(x);
+                std::reverse(ans.begin(), ans.end());
+                for (auto l : ans){
+                    cout << l << " ";
+                }
+                return 0;
+            }
+        }
+
+    }
+    cout << "NO" << endl;
+    return 0;
+}

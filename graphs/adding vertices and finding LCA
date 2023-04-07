@@ -1,0 +1,70 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+const int MAX_HEIGHT = 21;
+vector<vector<int>> dist(5e5+10,vector<int>(MAX_HEIGHT));
+vector<int> deep(5e5+10);
+
+
+void ADD(int v, int u)
+{
+    deep[u]=deep[v]+1;
+    dist[u][0]=v;
+    for (int i = 1; i < MAX_HEIGHT; ++i) {
+        dist[u][i]=dist[dist[u][i-1]][i-1];
+    }
+}
+
+int LCA(int v, int u)
+{
+    if (v==u){
+        return v;
+    }
+    if (deep[u]>deep[v]){
+        swap(v,u);
+    }
+    // deep[v]>=deep[u]
+    for (int i = MAX_HEIGHT-1; i >= 0; --i) {
+        if (deep[dist[v][i]]>=deep[u]){
+            v=dist[v][i];
+        }
+    }
+    if (u==v){
+        return v;
+    }
+    // deep[v]==deep[u]
+    for (int i = MAX_HEIGHT-1; i >= 0; --i) {
+        if (dist[v][i]!=dist[u][i]){
+            v=dist[v][i];
+            u=dist[u][i];
+        }
+    }
+    return dist[v][0];
+
+}
+
+int main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    int n;string str;int u,v;
+    cin >> n;
+    deep[1]=1;
+    for (int i = 0; i < MAX_HEIGHT; ++i) {
+        dist[1][i]=1;
+    }
+    while (n--){
+        cin >> str >> v >> u;
+        if (str[0]=='A'){
+            ADD(v,u);
+        }else{
+            cout << LCA(v,u) << "\n";
+        }
+    }
+    cout.flush();
+
+
+
+    return 0;
+}

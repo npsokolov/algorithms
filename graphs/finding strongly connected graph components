@@ -1,0 +1,60 @@
+#include <bits/stdc++.h>
+#define ll long long
+using namespace std;
+vector<vector<int>> g(2e5+100),g1(2e5+100);
+vector<bool> used(2e5+100,false),used1(2e5+100,false);
+deque<int> ans,cmp(2e5+100);
+void dfs(int v){
+    used[v]=true;
+    for (int u : g[v]){
+        if (!used[u]){
+            dfs(u);
+        }
+    }
+    ans.push_front(v);
+}
+void dfs1(int v,int c){
+    used1[v]=true;
+    cmp[v]=c;
+    for (int u : g1[v]){
+        if (!used1[u]){
+            dfs1(u,c);
+        }
+    }
+}
+int main()
+{
+    ios_base::sync_with_stdio(0), cin.tie(0), cout.tie(0);
+    //freopen("bugged.in","r",stdin);
+    //freopen("bridges.out","w",stdout);
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    ll n,m,t;
+    cin >> n >> m;
+    for (int i = 0; i < m; ++i) {
+        int u,v;
+        cin >> u >> v;
+        g[u].push_back(v);
+        g1[v].push_back(u);
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (!used[i]){
+            dfs(i);
+        }
+    }
+    int c=1;
+    auto& a  = ans;
+    for (int i = 0; i < n; ++i) {
+        int x = ans[i];
+        if (!used1[x]){
+            dfs1(x,c++);
+        }
+    }
+    cout << c-1 << endl;
+    for (int i = 1; i <= n; ++i) {
+        cout << cmp[i] << " ";
+    }
+
+
+    return 0;
+}

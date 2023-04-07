@@ -1,0 +1,63 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+vector<bool> used(2e5+100,false);
+vector<vector<int>> g(2e5+100);
+vector<int> tin(2e5+100),f(2e5+100,1e8);
+int tim=0;
+
+void dfs(int v, int last){
+    tin[v]=tim++;
+    f[v]=tin[v];
+    used[v]=true;
+    for (int u : g[v]){
+        if (!used[u]){
+            dfs(u,v);
+            f[v] = min(f[v], f[u]);
+        }else{
+            if (u!=last){
+                f[v]=min(f[v],tin[u]);
+            }
+        }
+    }
+}
+
+struct edge{
+    int x;
+    int y;
+};
+
+int main()
+{
+    freopen("bridges.in","r",stdin);
+    freopen("bridges.out","w",stdout);
+    int n,m,u,v;
+    cin >> n >> m;
+    vector<edge> edges(m);
+    for (int i = 0; i < m; ++i) {
+        cin >> u >> v;
+        edges[i]={u,v};
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (!used[i]){
+            dfs(i,-1);
+        }
+    }
+    int i=0;
+    vector<int> ans;
+    for (auto& [x,y] : edges) {
+        i++;
+        if (f[x]>tin[y] || f[y]>tin[x]){
+            ans.push_back(i);
+        }
+    }
+    cout << ans.size() << endl;
+    for (auto x : ans){
+        cout << x << endl;
+    }
+
+
+    return 0;
+}
