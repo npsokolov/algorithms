@@ -1,0 +1,89 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+vector<int> rang(1e6+1e5),p(1e6+1e5);
+vector<pair<int,pair<int,int>>> edges;
+int n,m;
+int c = 0;
+
+
+void MakeSet(int v)
+{
+    rang[v]=0;
+    p[v]=v;
+}
+
+int Find(int v)
+{
+    if (p[v]==v){
+        return v;
+    }
+    return p[v]=Find(p[v]);
+}
+
+bool Unite(int v, int u){
+    v = Find(v);
+    u = Find(u);
+    if (u!=v) {
+        if (rang[v] < rang[u]) {
+            swap(v, u);
+        }
+        if (rang[v] == rang[u]) {
+            rang[v]++;
+        }
+        p[u] = v;
+        return true;
+    }
+
+    return false;
+}
+
+int MST(){
+    int ans=0;
+    for (int i = 0; i < edges.size(); ++i) {
+        auto [w,uv] = edges[i];
+        if (Unite(uv.first,uv.second)){
+            ans+=w;
+        }
+
+    }
+    return ans;
+}
+
+
+int main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    int p1,p2;
+    int w1,w2,w3;
+    cin >> n >> m >> p1 >> p2;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= m; ++j) {
+            MakeSet(1005*i+j);
+            if (j<m) {
+                w1 = (i * i + j * (j + 1) * p1) % p2;
+                edges.emplace_back(w1, pair(i * 1005 + j + 1, i * 1005 + j));
+            }
+            if (i<n){
+                w2 = (i * (i+1) + j * j  * p1) % p2;
+                edges.emplace_back(w2, pair((i+1) * 1005 + j, i * 1005 + j));
+            }
+            if (i<n && j<m){
+                w3 = (i * (i+1) + j * (j+1)  * p1) % p2;
+                edges.emplace_back(w3, pair((i+1) * 1005 + j + 1, i * 1005 + j));
+            }
+        }
+    }
+    sort(edges.begin(),edges.end());
+
+    cout << MST() << endl;
+
+
+
+
+
+
+    return 0;
+}
