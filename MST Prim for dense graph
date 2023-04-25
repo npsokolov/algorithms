@@ -1,0 +1,66 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+vector<bool> used(5001,false);
+vector<vector<double>> edges(5001,vector<double>(5001));
+vector<pair<int,int>> cords;
+int n;
+vector<double> min_(5001,1e9);
+
+long double W = 0;
+void MST(){
+    min_[1]=0;
+    for (int i = 0; i < n; ++i) {
+        int v = -1;
+        for (int j = 1; j <= n; ++j) {
+            if (!used[j] && (v==-1 || min_[j]<min_[v])){
+                v=j;
+            }
+        }
+        used[v]=true;
+        if (i!=0) {
+            W+=((long double)(min_[v]));
+        }
+        for (int j = 1; j <= n; ++j) {
+            if (edges[v][j]<min_[j]) {
+                min_[j] = edges[v][j];
+            }
+        }
+
+    }
+}
+
+
+int main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    cin >> n;
+    cords.emplace_back();
+    for (int i = 0; i < n; ++i) {
+        int x,y;
+        cin >> x >> y;
+        cords.emplace_back(x,y);
+    }
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            if (i!=j) {
+                edges[i][j]=sqrt((double)(
+                        (cords[i].first - cords[j].first) * (cords[i].first - cords[j].first) +
+                        (cords[i].second - cords[j].second) * (cords[i].second - cords[j].second)));
+            }
+        }
+    }
+    cords.clear();
+    MST();
+    cout.precision(15);
+    cout << W << endl;
+
+
+
+
+
+
+    return 0;
+}
