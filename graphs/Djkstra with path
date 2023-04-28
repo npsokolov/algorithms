@@ -1,0 +1,61 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+#define ll long long
+vector<vector<pair<ll,ll>>> g(1e5+5);
+vector<ll> dist(1e5+5,1e18);
+vector<ll> path(1e5+5);
+
+void Djkstra(ll v)
+{
+    priority_queue<pair<ll,ll>,vector<pair<ll,ll>>,greater<pair<ll,ll>>> q;
+    q.emplace(0,v);
+    dist[v]=0;
+    while (!q.empty())
+    {
+        auto x = q.top();
+        q.pop();
+        if (dist[x.second]!=x.first){
+            continue;
+        }
+        for (auto u : g[x.second])
+        {
+            if (dist[u.first]>x.first+u.second){
+                path[u.first]=x.second;
+                dist[u.first]=x.first+u.second;
+                q.emplace(x.first+u.second,u.first);
+            }
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    ll n,m;
+    cin >> n >> m;
+    for (int i = 0; i < m; ++i) {
+        ll v,u,w;
+        cin >> u >> v >> w;
+        g[u].emplace_back(v,w);
+        g[v].emplace_back(u,w);
+    }
+    Djkstra(1);
+    ll x = n;
+    vector<ll> vec;
+    if (path[x]==0){
+        cout << -1 << endl;
+        return 0;
+    }
+    while (x!=1){
+        vec.push_back(x);
+        x=path[x];
+    }
+    reverse(vec.begin(),vec.end());
+    cout << 1 << " ";
+    for (ll x : vec) {
+        cout << x << " ";
+    }
+
+    return 0;
+}
