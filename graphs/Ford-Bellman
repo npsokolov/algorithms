@@ -1,0 +1,36 @@
+#include <queue>
+#include <vector>
+using namespace std;
+
+struct TEdge
+{
+    int To;
+    int Dist;
+};
+
+vector<vector<TEdge>> edges;
+
+const int INF = 1e9;
+
+int main()
+{
+    int n = 10;
+    int start = 0;
+
+    vector<int> dist(n, INF);
+
+    dist[start] = 0;
+
+    for (int iteration = 0; iteration < n; ++iteration) {
+        for (int v = 0; v < n; ++v) {
+            if (dist[v] == INF) {
+                continue;
+            }
+            for (auto e : edges[v]) {
+                dist[e.To] = min(dist[e.To], dist[v] + e.Dist);
+            }
+        }
+    }
+    // если после n+1-ой реалксации изменилась какая-либо длина, то есть цикл отрицательного веса 
+    return 0;
+}
