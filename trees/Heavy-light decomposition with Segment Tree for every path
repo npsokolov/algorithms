@@ -1,0 +1,185 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+#define ll long long
+int MAXHEIGHT = 17;
+vector<vector<int>> g(1e5+5),up(1e5+5,vector<int>(MAXHEIGHT,1));
+vector<bool> used(1e5+5,false),heavy(1e5+5,false);
+vector<int> weight(1e5+5,1),path(1e5+5,0),head(1e5+5),num(1e5+5),len(1e5+5,0),deep(1e5+5,0);
+struct lol
+{
+    int add=0,sum=0;
+};
+vector<vector<lol>> trees;
+int path_num = 0;
+int CountWeights(int v){
+    used[v]=true;
+    for (int u : g[v]){
+        if (!used[u]){
+            deep[u]=deep[v]+1;
+            up[u][0]=v;
+            for (int i = 1; i < MAXHEIGHT; ++i) {
+                up[u][i]=up[up[u][i-1]][i-1];
+            }
+            weight[v]+=CountWeights(u);
+        }
+    }
+    return weight[v];
+}
+
+void BuildingPaths(int v){
+    used[v]=true;
+    bool have_heavy = false;
+    for (int u : g[v]){
+        if (!used[u]){
+            if (2*weight[u] >= weight[v]) {
+                heavy[u]=true;
+                have_heavy = true;
+            }
+            BuildingPaths(u);
+        }
+    }
+    if (!have_heavy) {
+        path_num++;
+        path[v] = path_num;
+        head[path[v]] = v;
+        len[path[v]] = 1;
+        num[v] = 0;
+    }
+    if (heavy[v]){
+        head[path[v]] = up[v][0];
+        num[up[v][0]]=num[v]+1;
+        path[up[v][0]]=path[v];
+        len[path[v]]++;
+    }
+}
+
+void push(int v, int tl, int tr, vector<lol>& tree){
+    tree[2*v].add+=tree[v].add;
+    tree[2*v+1].add+=tree[v].add;
+    int tm = (tl+tr)>>1;
+    tree[2*v].sum+=tree[v].add*(tm-tl+1);
+    tree[2*v+1].sum+=tree[v].add*(tr-tm);
+    tree[v].add=0;
+}
+
+void ADD(int l, int r, int value, int tl, int tr, int v, vector<lol>& tree){
+    if (l==tl && r ==tr){
+        tree[v].add+=value;
+        tree[v].sum+=(r-l+1)*value;
+        return;
+    }
+    push(v,tl,tr,tree);
+    int tm = (tl+tr)>>1;
+    if (r<=tm){
+        ADD(l,r,value,tl,tm,2*v,tree);
+    }else if (l>tm){
+        ADD(l,r,value,tm+1,tr,2*v+1,tree);
+    }else{
+        ADD(l,tm,value,tl,tm,2*v,tree);
+        ADD(tm+1,r,value,tm+1,tr,2*v+1,tree);
+    }
+    tree[v].sum = tree[2*v].sum+tree[2*v+1].sum;
+}
+
+int SUM(int l, int r, int tl, int tr, int v, vector<lol>& tree){
+    if (l==tl && r ==tr){
+        return tree[v].sum;
+    }
+    push(v,tl,tr,tree);
+    int tm = (tl+tr)>>1;
+    if (r<=tm){
+        return SUM(l,r,tl,tm,2*v,tree);
+    }else if (l>tm){
+        return SUM(l,r,tm+1,tr,2*v+1,tree);
+    }else{
+        return SUM(l,tm,tl,tm,2*v,tree) + SUM(tm+1,r,tm+1,tr,2*v+1,tree);
+    }
+}
+
+int LCA(int v, int u){
+    if (v==u){
+        return v;
+    }
+    if (deep[u]>deep[v]){
+        swap(v,u);
+    }
+    for (int i = MAXHEIGHT-1; i >=0 ; --i) {
+        if (deep[up[v][i]]>=deep[u]){
+            v = up[v][i];
+        }
+    }
+    for (int i = MAXHEIGHT-1; i >=0 ; --i) {
+        if (up[v][i]!=up[u][i]){
+            v = up[v][i];
+            u = up[u][i];
+        }
+    }
+    if (v==u){
+        return v;
+    }
+    return up[v][0];
+}
+
+void add(int lower, int upper, int value){
+    if (path[lower]==path[upper]){
+        ADD(num[lower],num[upper],value,0,len[path[lower]]-1,1,trees[path[lower]]);
+    }else{
+        ADD(num[lower],len[path[lower]]-1, value,0,len[path[lower]]-1,1,trees[path[lower]]);
+        add(up[head[path[lower]]][0],upper,value);
+    }
+}
+
+int sum(int lower, int upper){
+    if (path[lower]==path[upper]){
+        return SUM(num[lower],num[upper],0,len[path[lower]]-1,1,trees[path[lower]]);
+    }else{
+        return SUM(num[lower],len[path[lower]]-1,0,len[path[lower]]-1,1,trees[path[lower]])
+        +sum(up[head[path[lower]]][0],upper);
+    }
+}
+
+
+
+int main(){
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ll n,q;
+    cin >> n >> q;
+    for (int i = 0; i < n - 1; ++i) {
+        int v,u;
+        cin >> v >> u;
+        g[v].emplace_back(u);
+        g[u].emplace_back(v);
+    }
+    CountWeights(1);
+    for (int i = 0; i < n + 2; ++i) {
+        used[i]=false;
+    }
+    BuildingPaths(1);
+    trees.resize(path_num+2);
+    for (int i = 1; i <= path_num; ++i) {
+        trees[i].resize(4*len[i]+1);
+    }
+    while (q--){
+        int v1,u1,v2,u2;
+        cin >> v1 >> u1 >> v2 >> u2;
+        int v = LCA(v1,u1);
+        int u = LCA(v2,u2);
+        add(u1,v,1);
+        add(v1,v,1);
+        ADD(num[v],num[v],-1,0,len[path[v]]-1,1,trees[path[v]]);
+        cout << sum(v2,u)+sum(u2,u)-SUM(num[u],num[u],0,len[path[u]]-1,1,trees[path[u]]) << "\n";
+
+        add(u1,v,-1);
+        add(v1,v,-1);
+        ADD(num[v],num[v],1,0,len[path[v]]-1,1,trees[path[v]]);
+    }
+    cout.flush();
+
+
+
+    return 0;
+}
