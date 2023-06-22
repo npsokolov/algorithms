@@ -1,0 +1,143 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+#define ll long long
+vector<int> parent, depth, heavy, head, pos;
+int cur_pos;
+
+int dfs(int v, vector<vector<int>> const& adj) {
+    int size = 1;
+    int max_c_size = 0;
+    for (int c : adj[v]) {
+        if (c != parent[v]) {
+            parent[c] = v, depth[c] = depth[v] + 1;
+            int c_size = dfs(c, adj);
+            size += c_size;
+            if (c_size > max_c_size)
+                max_c_size = c_size, heavy[v] = c;
+        }
+    }
+    return size;
+}
+vector<int> maxes(5e5+5);
+int decompose(int v, int h, vector<vector<int>> const& adj) {
+    head[v] = h, pos[v] = cur_pos++;
+    maxes[v]=pos[v];
+    if (heavy[v] != -1)
+        maxes[v]=max(decompose(heavy[v], h, adj),maxes[v]);
+    for (int c : adj[v]) {
+        if (c != parent[v] && c != heavy[v])
+            maxes[v]=max(decompose(c, c, adj),maxes[v]);
+    }
+    return maxes[v];
+}
+
+void init(vector<vector<int>> const& adj) {
+    parent = vector<int>(5e5+5);
+    depth = vector<int>(5e5+5);
+    heavy = vector<int>(5e5+5, -1);
+    head = vector<int>(5e5+5);
+    pos = vector<int>(5e5+5);
+    cur_pos = 0;
+    dfs(0, adj);
+    decompose(0, 0, adj);
+}
+int n;
+vector<int> tree;
+vector<vector<int>> g(5e5+5);
+
+void push(int v, int tl, int tr){
+    if (tree[v]!=-1) {
+        tree[2 * v] = tree[v];
+        tree[2 * v + 1] = tree[v];
+    }
+    tree[v]=-1;
+}
+
+void SETT(int l, int r, int value, int tl, int tr, int v){
+    if (l==tl && r ==tr){
+        tree[v]=value;
+        return;
+    }
+    push(v,tl,tr);
+    int tm = (tl+tr)>>1;
+    if (r<=tm){
+        SETT(l,r,value,tl,tm,2*v);
+    }else if (l>tm){
+        SETT(l,r,value,tm+1,tr,2*v+1);
+    }else{
+        SETT(l,tm,value,tl,tm,2*v);
+        SETT(tm+1,r,value,tm+1,tr,2*v+1);
+    }
+}
+
+int GETT(int pos1, int tl, int tr, int v){
+    if (tl==tr){
+        return tree[v];
+    }
+    push(v,tl,tr);
+    int tm = (tl+tr)>>1;
+    if (pos1<=tm){
+        return GETT(pos1,tl,tm,2*v);
+    }else{
+        return GETT(pos1,tm+1,tr,2*v+1);
+    }
+}
+
+void SET(int l, int r, int value){
+    SETT(l,r,value,0,n-1,1);
+}
+
+int GET(int pos1){
+    return GETT(pos1,0,n-1,1);
+}
+
+void query(int a, int b, int value) {
+    for (; head[a] != head[b]; b = parent[head[b]]) {
+        if (depth[head[a]] > depth[head[b]])
+            swap(a, b);
+        SET(pos[head[b]], pos[b], value);
+    }
+    if (depth[a] > depth[b])
+        swap(a, b);
+    SET(pos[a], pos[b], value);
+}
+
+
+int main(){
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ll q;
+    cin >> n;
+    for (int i = 0; i < n - 1; ++i) {
+        int v,u;
+        cin >> u >> v;
+        u--;v--;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+    tree.resize(4*n+5);
+    cin >> q;
+    init(g);
+    while (q--){
+        int c,v;
+        cin >> c >> v;
+        v--;
+        auto& m = maxes;
+        auto& p = pos;
+        if (c==1){
+            SET(pos[v],maxes[v],1);
+        }else if (c==2){
+            query(0,v,0);
+        }else{
+            cout << GET(pos[v]) << "\n";
+        }
+    }
+    cout.flush();
+
+
+
+    return 0;
+}
