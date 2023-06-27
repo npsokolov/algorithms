@@ -1,0 +1,79 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define int long long
+
+struct dot{
+    int x,y;
+};
+
+signed main()
+{
+    ios_base::sync_with_stdio(0), cin.tie(0), cout.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    int n,m;
+    cin >> n >> m;
+    vector<dot> alls(n+m+2);
+    alls[0]={0,0};
+    alls[n+m+1]={0,0};
+    int c = n+m+2;
+    for (int i = 0; i < n; ++i) {
+        auto& [x,y] = alls[i+1];
+        cin >> x >> y;
+    }
+    for (int i = 0; i < m; ++i) {
+        auto& [x,y] = alls[i+n+1];
+        cin >> x >> y;
+    }
+    vector<vector<long double>> dist(c,vector<long double>(c));
+    for (int i = 0; i < c; ++i) {
+        for (int j = 0; j < c; ++j) {
+            dist[i][j]=sqrt((long double)(alls[i].x-alls[j].x)*(alls[i].x-alls[j].x)+(long double)(alls[i].y-alls[j].y)*(alls[i].y-alls[j].y));
+        }
+    }
+    long double ans = 1e18;
+    vector<vector<long double>> dp(1<<(c),vector<long double>(c,1e18));
+    dp[1][0]=0;
+    for (int i = 0; i < 1<<(c); ++i) {
+        if (!(i&1)){
+            continue;
+        }
+        int count = 0;
+        for (int k = n+1; k < c; ++k) {
+            if (i&(1<<k)){
+                count++;
+            }
+        }
+        for (int j = 0; j < c; ++j) {
+            if (!(i&(1<<j))){
+                continue;
+            }
+            for (int k = 0; k < c; ++k) {
+                if (i&(1<<k)){
+                    continue;
+                }
+                dp[i+(1<<k)][k]=min(dp[i+(1<<k)][k],dp[i][j]+dist[j][k]/pow(2,count));
+            }
+        }
+        int towns = 0;
+        for (int j = 0; j < n + 1; ++j) {
+            if (i&(1<<j)){
+                towns++;
+            }
+        }
+        if (i&(1<<(n+m+1))){
+            towns++;
+        }
+        if (towns==n+2){
+            ans = min(ans, dp[i][n+m+1]);
+        }
+    }
+    cout.precision(15);
+    cout << ans << endl;
+
+
+
+    return 0;
+}
