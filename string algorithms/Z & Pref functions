@@ -1,0 +1,50 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+vector<int> prefFunction(string& s){
+    int n = s.size();
+    vector<int> p(n);
+    p[0]=0;
+    for (int i = 1; i < n; ++i) {
+        p[i]=p[i-1];
+        while (s[i]!=s[p[i]] && p[i]>0){
+            p[i]=p[p[i]-1];
+        }
+        if (s[i]==s[p[i]]){
+            p[i]++;
+        }
+    }
+    return p;
+}
+
+vector<int> zFunction(string& s){
+    int n = s.size();
+    vector<int> z(n);
+    int r = 0, l =0;
+    z[0]=0;
+    for (int i = 1; i < n; ++i) {
+        z[i] = max(0ll,min(r-i,z[i- l]));
+        while (i+z[i]<n && s[z[i]]==s[i+z[i]]){
+            z[i]++;
+        }
+        if (i+z[i]-1>r){
+            r = i+z[i]-1;
+            l = i;
+        }
+    }
+
+    return z;
+}
+
+
+
+signed main(){
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    int n,m;
+    
+
+    return 0;
+}
