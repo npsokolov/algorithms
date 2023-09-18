@@ -1,0 +1,126 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+template <size_t A_SIZE,int FIRST_SYMBOL>
+class Trie{
+    static constexpr int NUL = -1;
+    struct Node{
+        map<int,int> next;
+        int term;
+        int numTermInSubtree;
+        Node() : term(0), numTermInSubtree(0) {}
+    };
+    vector<Node> trie;
+    int getInt(int c){
+        return c-FIRST_SYMBOL;
+    }
+public:
+    Trie() {
+        trie.emplace_back();
+    }
+    void add(const string& s){
+        int cur = 0;
+        ++trie[cur].numTermInSubtree;
+        for(auto c: s){
+            int id = getInt(c);
+            if(trie[cur].next.find(id)==trie[cur].next.end()){
+                trie[cur].next[id] = trie.size();
+                trie.emplace_back();
+            }
+            cur = trie[cur].next[id];
+            ++trie[cur].numTermInSubtree;
+        }
+        ++trie[cur].term;
+    }
+    bool has(const string& s){
+        int cur = 0;
+        for(auto c: s){
+            int id = getInt(c);
+            if(trie[cur].next[id]==NUL){
+                return false;
+            }
+            cur = trie[cur].next[id];
+        }
+        if (trie[cur].term>0){
+            return true;
+        }
+    }
+    bool del(const string& s){
+        if (!has(s)){
+            return false;
+        }
+        int cur = 0;
+        for(auto c: s){
+            --trie[cur].numTermInSubtree;
+            int id = getInt(c);
+            int sub_cur = trie[cur].next[id];
+            if (trie[trie[cur].next[id]].numTermInSubtree==1){
+                trie[cur].next[id] = NUL;
+            }
+            cur = sub_cur;
+        }
+    }
+    string getKth(int k,int from = 0){
+        string ans = "";
+        int cur = from;
+        if (k<=trie[cur].term){
+            return "";
+        }
+        for (int i = 0; i < A_SIZE; ++i) {
+            if (trie[cur].next[i]==NUL){
+                continue;
+            }
+            if (trie[trie[cur].next[i]].numTermInSubtree<k){
+                k-=trie[trie[cur].next[i]].numTermInSubtree;
+            }else{
+                k-=trie[cur].term;
+                ans.push_back(char(FIRST_SYMBOL+i));
+                ans+=getKth(k,trie[cur].next[i]);
+                return ans;
+            }
+        }
+    }
+    int numOfSameStart(const string& s){
+        int cur = 0;
+        for(auto c: s){
+            int id = getInt(c);
+            if(trie[cur].next.find(id)==trie[cur].next.end()){
+                return 0;
+            }
+            cur = trie[cur].next[id];
+        }
+        return trie[cur].numTermInSubtree;
+    }
+};
+signed main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    int n;
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    Trie<26,'a'> t;
+    cin >> n;
+    for (int i = 0; i < n; ++i) {
+        string s;
+        cin >> s;
+        t.add(s);
+    }
+    int w;
+    cin >> w;
+    while(w--){
+        int c;
+        cin >> c;
+        if (c==1){
+            string s;
+            cin >> s;
+            t.add(s);
+        }else{
+            string s;
+            cin >> s;
+            cout << t.numOfSameStart(s) << "\n";
+        }
+    }
+    cout.flush();
+    return 0;
+}
