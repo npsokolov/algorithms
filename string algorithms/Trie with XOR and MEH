@@ -1,0 +1,165 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+template <size_t A_SIZE,int FIRST_SYMBOL>
+class Trie{
+public:
+    static constexpr int NUL = -1;
+    struct Node{
+        vector<int> next;
+        int term;
+        int numTermInSubtree;
+        Node() : next(A_SIZE,NUL), term(0), numTermInSubtree(0) {}
+    };
+    vector<Node> trie;
+    int getInt(int c){
+        return c-FIRST_SYMBOL;
+    }
+    vector<int> changed;
+public:
+    Trie() {
+        trie.emplace_back();
+        changed.resize(35);
+        for (int i = 0; i < 35; ++i) {
+            changed[i]=0;
+        }
+    }
+    void add(const string& s){
+        int cur = 0;
+        int deep = 0;
+        ++trie[cur].numTermInSubtree;
+        for(auto c: s){
+            int id = getInt(c)^changed[deep];
+            if(trie[cur].next[id]== NUL){
+                trie[cur].next[id] = trie.size();
+                trie.emplace_back();
+            }
+            deep++;
+            cur = trie[cur].next[id];
+            ++trie[cur].numTermInSubtree;
+        }
+        ++trie[cur].term;
+        //trie[cur].term = true;
+    }
+    bool has(const string& s){
+        int cur = 0;
+        for(auto c: s){
+            int id = getInt(c);
+            if(trie[cur].next[id]==NUL){
+                return false;
+            }
+            cur = trie[cur].next[id];
+        }
+        if (trie[cur].term>0){
+            return true;
+        }
+    }
+    void del(const string& s){
+        int cur = 0;
+        int deep = 0;
+        for(auto c: s){
+            --trie[cur].numTermInSubtree;
+            int id = getInt(c)^changed[deep];
+            deep++;
+            int sub_cur = trie[cur].next[id];
+            if (trie[trie[cur].next[id]].numTermInSubtree==1){
+                trie[cur].next[id] = NUL;
+            }
+            cur = sub_cur;
+        }
+        --trie[cur].numTermInSubtree;
+        --trie[cur].term;
+    }
+    string getKth(int k,int from = 0){
+        string ans = "";
+        int cur = from;
+        if (k<=trie[cur].term){
+            return "";
+        }
+        for (int i = 0; i < A_SIZE; ++i) {
+            if (trie[cur].next[i]==NUL){
+                continue;
+            }
+            if (trie[trie[cur].next[i]].numTermInSubtree<k){
+                k-=trie[trie[cur].next[i]].numTermInSubtree;
+            }else{
+                k-=trie[cur].term;
+                ans.push_back(char(FIRST_SYMBOL+i));
+                ans+=getKth(k,trie[cur].next[i]);
+                return ans;
+            }
+        }
+    }
+    int numOfSameStart(const string& s){
+        int cur = 0;
+        for(auto c: s){
+            int id = getInt(c);
+            if(trie[cur].next[id]== NUL){
+                return 0;
+            }
+            cur = trie[cur].next[id];
+        }
+        return trie[cur].numTermInSubtree;
+    }
+    static string to_string(int x){
+        string s;
+        for (int i = 0; i < 32; ++i) {
+            s += std::to_string((x&(1ll<<i))>0);
+        }
+        reverse(s.begin(),s.end());
+        return s;
+    }
+    void change(int x){
+        for (int i = 0; i < 32; ++i) {
+            changed[i]^=((x&(1ll<<(31-i)))>0);
+        }
+    }
+
+    int findMeh(){
+        int cur = 0;
+        int ans = 0;
+        for (int i = 0; i < 32; ++i) {
+            if(trie[cur].next[0^changed[i]]==NUL){
+                return ans;
+            }else{
+                if (trie[trie[cur].next[0^changed[i]]].numTermInSubtree==(1<<(31-i))){
+                    ans+=1<<(31-i);
+                    if (trie[cur].next[1^changed[i]]==NUL){
+                        return ans;
+                    }
+                    cur = trie[cur].next[1^changed[i]];
+                }else{
+                    cur = trie[cur].next[0^changed[i]];
+                }
+            }
+        }
+        return ans;
+    }
+
+};
+signed main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    int n,k;
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    Trie<2,'0'> t;
+    cin >> n >> k;
+    unordered_set<int> st;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        cin >> x;
+        st.insert(x);
+    }
+    for (int x : st){
+        t.add(t.to_string(x));
+    }
+    for (int i = 0; i < k; ++i) {
+        int x;
+        cin >> x;
+        t.change(x);
+        cout << t.findMeh() << "\n";
+    }
+    cout.flush();
+    return 0;
+}
