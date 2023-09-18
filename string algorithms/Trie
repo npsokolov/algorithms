@@ -1,33 +1,39 @@
 #include <bits/stdc++.h>
 
 using namespace std;
-
 template <size_t A_SIZE,int FIRST_SYMBOL>
 class Trie{
     static constexpr int NUL = -1;
     struct Node{
-        map<int,int> next;
+        vector<int> next;
         int term;
         int numTermInSubtree;
-        Node() : term(0), numTermInSubtree(0) {}
+        Node() : next(A_SIZE,NUL), term(0), numTermInSubtree(0) {}
     };
     vector<Node> trie;
     int getInt(int c){
         return c-FIRST_SYMBOL;
     }
+    vector<int> changed;
 public:
     Trie() {
         trie.emplace_back();
+        changed.resize(35);
+        for (int i = 0; i < 35; ++i) {
+            changed[i]=0;
+        }
     }
     void add(const string& s){
         int cur = 0;
+        int deep = 0;
         ++trie[cur].numTermInSubtree;
         for(auto c: s){
-            int id = getInt(c);
-            if(trie[cur].next.find(id)==trie[cur].next.end()){
+            int id = getInt(c)^changed[deep];
+            if(trie[cur].next[id]== NUL){
                 trie[cur].next[id] = trie.size();
                 trie.emplace_back();
             }
+            deep++;
             cur = trie[cur].next[id];
             ++trie[cur].numTermInSubtree;
         }
@@ -46,20 +52,21 @@ public:
             return true;
         }
     }
-    bool del(const string& s){
-        if (!has(s)){
-            return false;
-        }
+    void del(const string& s){
         int cur = 0;
+        int deep = 0;
         for(auto c: s){
             --trie[cur].numTermInSubtree;
-            int id = getInt(c);
+            int id = getInt(c)^changed[deep];
+            deep++;
             int sub_cur = trie[cur].next[id];
             if (trie[trie[cur].next[id]].numTermInSubtree==1){
                 trie[cur].next[id] = NUL;
             }
             cur = sub_cur;
         }
+        --trie[cur].numTermInSubtree;
+        --trie[cur].term;
     }
     string getKth(int k,int from = 0){
         string ans = "";
@@ -85,12 +92,42 @@ public:
         int cur = 0;
         for(auto c: s){
             int id = getInt(c);
-            if(trie[cur].next.find(id)==trie[cur].next.end()){
+            if(trie[cur].next[id]== NUL){
                 return 0;
             }
             cur = trie[cur].next[id];
         }
         return trie[cur].numTermInSubtree;
+    }
+    static string to_string(int x){
+        string s;
+        for (int i = 0; i < 32; ++i) {
+            s += std::to_string((x&(1ll<<i))>0);
+        }
+        reverse(s.begin(),s.end());
+        return s;
+    }
+    void change(int x){
+        for (int i = 0; i < 32; ++i) {
+            changed[i]^=(x&(1ll<<(31-i)));
+        }
+    }
+
+    int findMax(const string& s){
+        int cur = 0;
+        int ans = 0;
+        int deep = 0;
+        for(auto c: s){
+            int id = getInt(c);
+            if(trie[cur].next[1-id]== NUL){
+                cur = trie[cur].next[id];
+            }else {
+                ans+=(1ll<<(31-deep));
+                cur = trie[cur].next[1-id];
+            }
+            deep++;
+        }
+        return ans;
     }
 };
 signed main() {
@@ -99,26 +136,18 @@ signed main() {
     int n;
     freopen("input.txt","r",stdin);
     freopen("output.txt","w",stdout);
-    Trie<26,'a'> t;
+    Trie<2,'0'> t;
     cin >> n;
+    t.add(Trie<2, 48>::to_string(0));
     for (int i = 0; i < n; ++i) {
-        string s;
-        cin >> s;
-        t.add(s);
-    }
-    int w;
-    cin >> w;
-    while(w--){
-        int c;
-        cin >> c;
-        if (c==1){
-            string s;
-            cin >> s;
-            t.add(s);
+        char c;int x;
+        cin >> c >> x;
+        if (c=='?'){
+            cout << t.findMax(Trie<2, 48>::to_string(x)) << "\n";
+        }else if (c=='+'){
+            t.add(Trie<2, 48>::to_string(x));
         }else{
-            string s;
-            cin >> s;
-            cout << t.numOfSameStart(s) << "\n";
+            t.del(Trie<2, 48>::to_string(x));
         }
     }
     cout.flush();
