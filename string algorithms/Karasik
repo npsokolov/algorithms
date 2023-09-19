@@ -1,0 +1,158 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+template<std::size_t A_SIZE, std::size_t FIRST_SYMBOL>
+class Trie{
+    static constexpr int NUL = -1;
+    int numOfStrings;
+    struct Node{
+        int link; // max own suffix of string that we have when we are going to trie[v]
+        int nextTerm; //link to the closest term vertex
+        int parent; // our parent
+        int symbol; //we used to come to this v
+        //unordered_map<int,int> next; // casual go
+        unordered_map<int,int> next;
+        int go[26];
+        //vector<int> go; // where we should go in order to make our algorithm determined
+        vector<int> term; // ends of strings
+        //bool term;
+        pair<int,int> lr;
+        Node() : /*next(A_SIZE, NUL),*/ /*go(A_SIZE,NUL),*/ term(false), /*nextTerm(0),*/lr({-1,-1}) {
+            for (int i = 0; i < 26; ++i) {
+                /*next[i]=NUL;*/
+                go[i]=NUL;
+            }
+        }
+    };
+    static int getInt(int c){
+        return c - FIRST_SYMBOL;
+    }
+    vector<Node> trie;
+public:
+    Trie() {
+        trie.emplace_back();
+        numOfStrings = 0;
+    }
+    void add(const string& s,int l,bool right){
+        int cur = 0;
+        int deep = 0;
+        for(auto& c: s){
+            int id = getInt(c);
+            if(trie[cur].next.find(id)==trie[cur].next.end()){
+            //if (trie[cur].next[id]==NUL){
+                trie[cur].next[id] = trie.size();
+                trie.emplace_back();
+                trie.back().parent = cur;
+                trie.back().symbol = id;
+            }
+            cur = trie[cur].next[id];
+           // trie[cur].term = true; /////////////
+            if (right) {
+                trie[cur].lr = {l, l + deep};
+            }else{
+                trie[cur].lr = {l, l - deep};
+            }
+            deep++;
+        }
+        trie[cur].term.push_back(numOfStrings++);
+    }
+    void build(){
+        queue<int> q;
+        for (int i = 0; i < A_SIZE; ++i) {
+            if (trie[0].next.find(i)!=trie[0].next.end()){
+            //if (trie[0].next[i]!=NUL){
+                trie[0].go[i]=trie[0].next[i];
+                q.emplace(trie[0].go[i]);
+            }else{
+                trie[0].go[i]= 0;
+            }
+        }
+        while(!q.empty()){
+            int v = q.front();
+            q.pop();
+            if (trie[v].parent==0){
+                trie[v].link = 0;
+            }else{
+                trie[v].link = trie[trie[trie[v].parent].link].go[trie[v].symbol];
+            }
+            if (!trie[trie[v].link].term.empty()){
+                trie[v].nextTerm = trie[v].link;
+            }else{
+                trie[v].nextTerm = trie[trie[v].link].nextTerm;
+            }
+            for (int i = 0; i < A_SIZE; ++i) {
+                //if (trie[v].next[i]!=NUL){
+                if (trie[v].next.find(i)!=trie[v].next.end()){
+                    trie[v].go[i] = trie[v].next[i];
+                    q.push(trie[v].next[i]);
+                }else{
+                    trie[v].go[i]=trie[trie[v].link].go[i];
+                }
+            }
+        }
+    }
+
+    vector<bool> work(const string& text){
+        vec.resize(text.size());
+        int cur = 0;
+        vector<bool> ans(numOfStrings,false);
+        vector<bool> used(trie.size(),false);
+        int cnt = 0;
+        for (auto& c : text){
+            int id = getInt(c);
+            int v = trie[cur].go[id];
+            for (int u = v;u!=0 && u!=NUL && !used[u];u=trie[u].nextTerm){
+                used[u]=true;
+                for (int x : trie[u].term){
+                    ans[x]=true;
+                }
+            }
+            cur=v;
+            vec[cnt]=trie[cur].lr;
+            cnt++;
+        }
+        return ans;
+    }
+    vector<pair<int,int>> vec;
+};
+struct si{
+    int f,x,l,r;
+};
+signed main(){
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    int n,m;
+    string s;
+    cin >> s;
+
+    n = s.size();
+    Trie<26,'a'> trie;
+    for (int i = 0; i < n; ++i) {
+        string sub;
+        for (int j = n-i-1; j >=0; --j) {
+            sub.push_back(s[j]);
+        }
+        trie.add(sub,n-i-1,false);
+    }
+    for (int i = 0; i < n; ++i) {
+        trie.add(s.substr(i),i,true);
+    }
+    s.clear();
+    string text;
+    trie.build();
+    cin >> text;
+    trie.work(text);
+    m = text.size();
+  
+
+
+    cout.flush();
+
+
+
+
+
+    return 0;
+}
