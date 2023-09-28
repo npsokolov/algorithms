@@ -1,0 +1,91 @@
+#include <iostream>
+#include <map>
+#include <vector>
+#include <unordered_set>
+#include <cstring>
+#include <set>
+
+using namespace std;
+int MAXLEN = 200004;
+#define int long long
+class Suff{
+public:
+    struct state {
+        int len, link;
+        map<int,int> next;
+        int cnt;
+    };
+    vector<state> st;
+    int sz, last;
+    vector<vector<int>> deep;
+    void sa_init() {
+        st.resize(MAXLEN*2);
+        sz = last = 0;
+        st[0].len = 0;
+        st[0].link = -1;
+        ++sz;
+        deep.resize(2*MAXLEN);
+    }
+    Suff(const string& text){
+        sa_init();
+        for (int i = 0; i < text.size(); ++i) {
+            sa_extend(text[i]);
+        }
+        for (int i = MAXLEN*2-1; i >=0 ; --i) {
+            for (auto y : deep[i]) {
+                st[st[y].link].cnt += st[y].cnt;
+            }
+        }
+    }
+    void sa_extend (int c) {
+        int cur = sz++;
+        st[cur].len = st[last].len + 1;
+        deep[st[cur].len].push_back(cur);
+        st[cur].cnt=1;
+        int p;
+        for (p=last; p!=-1 && st[p].next.count(c)==0; p=st[p].link)
+            st[p].next[c] = cur;
+        if (p == -1)
+            st[cur].link = 0;
+        else {
+            int q = st[p].next[c];
+            if (st[p].len + 1 == st[q].len)
+                st[cur].link = q;
+            else {
+                int clone = sz++;
+                st[clone].len = st[p].len + 1;
+                st[clone].next = st[q].next;
+                st[clone].link = st[q].link;
+                for (; p!=-1 && st[p].next[c]==q; p=st[p].link)
+                    st[p].next[c] = clone;
+                st[q].link = st[cur].link = clone;
+                deep[st[clone].len].push_back(clone);
+            }
+        }
+        last = cur;
+    }
+};
+signed main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    int n,k;
+    cin >> n;
+    string s;
+    cin >> s;
+    vector<int> a;
+    string s1;
+    cin >> s1;
+    for (char c : s1){
+        a.push_back(c-'0');
+    }
+    Suff f = Suff(s);
+    long long ans = 0;
+    for (int i = f.sz-1; i >0 ; --i) {
+        ans=max(ans,(long long)f.st[i].cnt*(long long)f.st[i].len);
+    }
+    cout << ans << "\n";
+    cout.flush();
+    return 0;
+}
