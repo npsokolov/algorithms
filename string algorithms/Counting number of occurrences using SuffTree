@@ -1,0 +1,251 @@
+#include <vector>
+#include <string>
+#include <map>
+#include <iostream>
+#include <limits>
+#include <ranges>
+#include <unordered_set>
+#include <set>
+
+using namespace std;
+int INF = INT32_MAX;
+struct SuffTree {
+    struct Node {
+        long long term;
+        long long ans;
+        int l, r; // ребро, ведущее в эту вершину из родителя (соответствует подстроке s[l:r])
+        int link; // суффиксная ссылка (ведет в вершину дерева, которая соответствует той же строке, что и эта вершина, только без первой буквы)
+        int par; // индекс родителя вершины
+        map<int, int> next; // переходы из вершины (легко заменить на массив)
+        Node(int l = 0, int r = 0, int link = -1, int par = 0,int cost = 0,int term = 0) : l(l), r(r), link(link), par(par), next{}, ans(cost), term(term) {}
+
+        int &get(int c) {
+            if (next.contains(c))
+                return next[c];
+            return next[c] = -1;
+        }
+
+        int len() const {
+            return r - l;
+        }
+    };
+
+    // sz - кол-во верщин в дереве
+    SuffTree(int sz = 100) : s{}, cur{}, tree(1) {
+        tree.reserve(sz);
+        s.reserve(sz);
+        tree[0].link = 0;
+    }
+
+    // Локация в дереве (может быть вершиной и позицией на ребре)
+    struct State {
+        int v; // вершина
+        int pos; // позиция от начала ребра ведущего в 'v'
+        // заметим:
+        // 1) pos == 0 соответствует родителю вершины 'v' (tree[v].par)
+        // 2) pos == tree[v].len() соответствует вершине 'v'
+        // 3) остальные 0 < pos < tree[v].len() соответствуют локации на ребре
+        State(int v = 0, int pos = 0) : v(v), pos(pos) {};
+    };
+
+    // переход из локации 'cur' по строке s[l:r]
+    State go(State st, int l, int r) {
+        while (l < r) {
+            // если дошли до конца ребра, пробуем сделать переход
+            if (st.pos == tree[st.v].len()) {
+                st = State(tree[st.v].get(s[l]), 0);
+                // если перехода нет, возвращаем "несуществующую" локацию
+                if (st.v == -1) return st;
+                // иначе продолжаем двигать локацию
+                // здесь l не меняется, так как мы выставляем cur.pos = 0, то есть по ребру мы не двигаемся
+            } else {
+                // если на ребре нет нужной буквы возвращаем "несуществующую" локацию
+                if (s[tree[st.v].l + st.pos] != s[l]) {
+                    return State(-1, -1);
+                }
+                // переходим до конца ребра или пока не дойдем до позиции r
+                int d = min(tree[st.v].len() - st.pos, r - l);
+                l += d;
+                st.pos += d;
+            }
+        }
+        return st;
+    }
+
+    // по локации расщепляет ребро, если нужно
+    int split(State st) {
+        // если позиция 0, возвращаем родителя
+        if (st.pos == 0) {
+            return tree[st.v].par;
+        }
+        // если позиция равна концу ребра, возвращаем саму вершину
+        if (st.pos == tree[st.v].len()) {
+            return st.v;
+        }
+        // иначе расщепляем ребро
+        // хотим получить такое: (parent) ---(s[l : l + pos])---> (new) ---(s[l + pos : r])---> (v)
+        // создаем вершину для куска до st.pos
+        tree.emplace_back(tree[st.v].l, tree[st.v].l + st.pos, -1, tree[st.v].par);
+        // обновляем переход из родителя
+        tree[tree[st.v].par].get(s[tree[st.v].l]) = tree.size() - 1;
+        // делаем переход в оставшийся кусок
+        tree.back().get(s[tree[st.v].l + st.pos]) = st.v;
+        // двигаем "начало" ребра у оставшегося куска
+        tree[st.v].l += st.pos;
+        // меняем родителя оставшегося куска
+        tree[st.v].par = tree.size() - 1;
+        // возвращаем созданную вершину
+        return tree.size() - 1;
+    }
+
+    int getLink(int v) {
+        int &ans = tree[v].link;
+        // если линка уже посчитана, возвращаем
+        if (ans != -1) return ans;
+        // если дошли до корня возвращаем корень
+        if (v == 0) return ans = 0;
+        // иначе насчитаем линку рекурсивно
+        int p = tree[v].par;
+        // для этого посчитаем линку родителя
+        int l = getLink(p);
+        // поставим локацию в конец ребра
+        auto loc = State(l, tree[l].len());
+        // перейдем из новой локации по куску строки от родителя до текущей вершины
+        int le = tree[v].l;
+        // если родитель - корень, то нужно убрать 1 букву сначала, чтобы перейти к след суффиксу
+        if (p == 0) {
+            ++le;
+        }
+        int ri = tree[v].r;
+        auto nex = go(loc, le, ri);
+        // разделим ребро если нужно
+        ans = split(nex);
+        tree[v].link = ans;
+        return ans;
+    }
+
+    void add(int c,int cost = 0) {
+        s.push_back(c);
+        // есть 3 типа локаций:
+        // 1) листья
+        // 2) внутренние локации, у которых нет перехода по букве 'c'
+        // 3) внутренние локации, у которых есть переход по 'c'
+        while (true) {
+            // пытаемся сделать переход
+            auto newState = go(cur, s.size() - 1, s.size());
+            // если переход успешный, значит "новых" суффиксов больше не появится с буквой 'c'
+            if (newState.v != -1) {
+                cur = newState;
+                break;
+            }
+            // для простоты кода можно не пропускать листья,
+            // а действовать так же, как и с внутренними локациями
+            // на асимптотику это не влияет
+            // иначе добавляем вершину (лист)
+            int mid = split(cur);
+            // так как это лист, пусть правая граница будет бесконечностью
+            tree.emplace_back(s.size() - 1, INF, -1, mid, cost, 1);
+            // добавляем переход по букве c
+            tree[mid].get(c) = tree.size() - 1;
+            // если дошли до корня, выходим
+            if (mid == 0) {
+                break;
+            }
+            // переходим по линке в следующую интересную локацию
+            cur.v = getLink(mid);
+            cur.pos = tree[cur.v].len();
+        }
+    }
+
+    void dfs(int v = 0) {
+        bool flag = false;
+        for (auto [key, u]: tree[v].next) {
+            if (u == -1) {
+                continue;
+            }
+            flag = true;
+            dfs(u);
+            tree[v].term += tree[u].term;
+            tree[v].ans += tree[u].ans;
+        }
+    }
+
+    /*int find(const string &p) {
+        int v = 0;
+        for (int i = 0; i < p.size();) {
+            if (tree[v].get(p[i]) != -1) {
+                v = tree[v].get(p[i]);
+                for (int j = 0; i < p.size() && j < tree[v].len(); ++j) {
+                    if (tree[v].l + j >= s.size() - 1 || p[i] != s[tree[v].l + j]) {
+                        return 0;
+                    }
+                    ++i;
+                }
+            } else {
+                return 0;
+            }
+        }
+        return tree[v].term;
+    }*/
+
+    long long DFS(int v=0,int len=0){
+        long long ans = 0;
+        if (v!=0){
+            /*int cnt = tree[v].term;
+            int from = len+1;*/
+            int to = len+tree[v].r-tree[v].l;
+            if (tree[v].len()!=0) {
+                ans = max(ans, tree[v].ans * to);
+            }
+        }
+        for (auto& [key,u] : tree[v].next){
+            if (u==-1){
+                continue;
+            }
+            ans=max(ans,DFS(u,len+tree[v].len()));
+        }
+        return ans;
+    }
+
+    void computeString(const string& ss,int cost){
+        static int x = 1;
+        cur = {0,0};
+        INF = s.size()+ss.size();
+        for (int c : ss){
+            add(c,cost);
+        }
+        add((int)'z'+x,cost);
+        x++;
+    }
+private:
+    vector<int> s;
+    State cur;
+    vector<Node> tree;
+};
+
+
+
+signed main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    freopen("input.txt","r",stdin);
+    freopen("output.txt","w",stdout);
+    int n;
+    cin >> n;
+    vector<string> v(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> v[i];
+    }
+    SuffTree suffTree = SuffTree(1e6+100);
+    for (string& s : v) {
+        int cost;
+        cin >> cost;
+        suffTree.computeString(s,cost);
+    }
+    suffTree.dfs();
+    cout << suffTree.DFS() << endl;
+
+
+    cout.flush();
+    return 0;
+}
