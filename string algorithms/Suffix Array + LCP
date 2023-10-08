@@ -1,0 +1,135 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+vector<int> getSuffArray(string &s) {
+    s.push_back('\0');
+    int n = s.size();
+    vector<int> suffArr(n), cls(n);
+    vector<vector<int>> cnt(max(n, 256));
+    int classes = 0;
+    int g = 0;
+    for (char c: s) {
+        cnt[c].push_back(g++);
+    }
+    g = 0;
+    for (int i = 0; i < cnt.size(); ++i) {
+        for (int x: cnt[i]) {
+            suffArr[g++] = x;
+            cls[x] = classes;
+        }
+        if (!cnt[i].empty()) classes++;
+    }
+    for (int halfLength = 1; halfLength < n; halfLength *= 2) {
+        vector<int> oldCls = cls, oldSuffArr = suffArr;
+        vector<int> cnts(cnt.size(), 0);
+        for (int i = 0; i < n; ++i) {
+            ++cnts[cls[i]];
+        }
+        for (int i = 1; i < cnts.size(); ++i) {
+            cnts[i] += cnts[i - 1];
+        }
+        for (int i = n - 1; i >= 0; --i) {
+            int sufIndex = (oldSuffArr[i] - halfLength + n) % n;
+            int sufClass = oldCls[sufIndex];
+            suffArr[(cnts[sufClass]--) - 1] = sufIndex;
+        }
+        classes = 0;
+        cls[suffArr[0]] = 0;
+        for (int i = 1; i < n; ++i) {
+            int prevSufIndex = suffArr[i - 1];
+            int sufIndex = suffArr[i];
+            int prevXClass = oldCls[prevSufIndex];
+            int prevYClass = oldCls[(prevSufIndex + halfLength) % n];
+            int xClass = oldCls[sufIndex];
+            int yClass = oldCls[(sufIndex + halfLength) % n];
+            if (make_pair(prevXClass, prevYClass) != make_pair(xClass, yClass)) {
+                classes++;
+            }
+            cls[sufIndex] = classes;
+        }
+    }
+    return suffArr;
+}
+vector<int> tree;
+void build(int tl,int tr,int v,vector<int>& vec){
+    auto & t = tree;
+    if (tl==tr){
+        tree[v]=vec[tl];
+        return;
+    }
+    int tm = (tl+tr)>>1;
+    build(tl,tm,2*v,vec);
+    build(tm+1,tr,2*v+1,vec);
+    tree[v]=min(tree[2*v],tree[2*v+1]);
+}
+
+int mn(int tl,int tr,int l,int r,int v){
+    if (tl==l && tr==r){
+        return tree[v];
+    }
+    int tm = (tl+tr)>>1;
+    if (r<=tm){
+        return mn(tl,tm,l,r,2*v);
+    }else if (l>tm){
+        return mn(tm+1,tr,l,r,2*v+1);
+    }else{
+        return min(mn(tl,tm,l,tm,2*v),mn(tm+1,tr,tm+1,r,2*v+1));
+    }
+}
+
+
+signed main() {
+    ios_base::sync_with_stdio(0), cin.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    string s;
+    getline(cin, s);
+    auto suffArrq = getSuffArray(s);
+    s.pop_back();
+    int n = s.size();
+    vector<int> suffArr(n),Arrsuff(n);
+    for (int i = 0; i < s.size(); ++i) {
+        suffArr[i] = suffArrq[i+1];
+    }
+    for (int i = 0; i < n; ++i) {
+        Arrsuff[suffArr[i]] = i;
+    }
+    vector<int> lcp(n-1);
+    int k = 0;int len = 0;
+    for (int i = 0; i < n; ++i) {
+        if (Arrsuff[i]==n-1){
+            continue;
+        }
+        int pos = suffArr[Arrsuff[i]+1];
+        while (pos+len<n && i+len<n && s[pos+len]==s[i+len]){
+            len++;
+        }
+        lcp[Arrsuff[i]]=len;
+        len = max(0,len-1);
+    }
+    tree.resize(4*n);
+    build(0,n-1,1,lcp);
+    int q;
+    cin >> q;
+    while (q--){
+        int l,r,lb,rb;
+        cin >> l >> r >> lb >> rb;
+        if (r-l!=rb-lb){
+            cout << "No" << endl;
+            continue;
+        }
+        if (l==lb){
+            cout << "Yes" << endl;
+            continue;
+        }
+        int lx = min(Arrsuff[l-1],Arrsuff[lb-1]);
+        int rx = max(Arrsuff[l-1],Arrsuff[lb-1]);
+        cout << ((mn(0,n-1,lx,rx-1,1)>(r-l)) ?  "Yes" : "No") << endl;
+    }
+
+    cout.flush();
+
+
+    return 0;
+}
