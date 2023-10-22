@@ -109,7 +109,7 @@ signed main() {
         len = max(0,len-1);
     }
     tree.resize(4*n);
-    build(0,n-1,1,lcp);
+    build(0,n-2,1,lcp);
     int q;
     cin >> q;
     while (q--){
@@ -125,7 +125,7 @@ signed main() {
         }
         int lx = min(Arrsuff[l-1],Arrsuff[lb-1]);
         int rx = max(Arrsuff[l-1],Arrsuff[lb-1]);
-        cout << ((mn(0,n-1,lx,rx-1,1)>(r-l)) ?  "Yes" : "No") << endl;
+        cout << ((mn(0,n-2,lx,rx-1,1)>(r-l)) ?  "Yes" : "No") << endl;
     }
 
     cout.flush();
