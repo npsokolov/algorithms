@@ -1,0 +1,57 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+#define int long long
+const int m = 1e9+7;
+void solve() {
+    int n;
+    cin >> n;
+    int j = 0;
+    int x = 1;
+    for (int i = 0; i < 100; ++i) {
+        if (x>n){
+            break;
+        }
+        x*=2;
+        j = i;
+    }
+    int c = 1,f=0;
+    int n1 = n;
+    int cnt = 0;
+    vector<int> ans(j+1ll);
+    for (int i = 0; i <= j; ++i) {
+        if (n%2ll==1ll){
+            cnt = f+1ll;
+        }else{
+            cnt = c;
+        }
+        ans[i] = (((n+1ll)/2ll-1ll)*c)+cnt;
+        ans[i]%=m;
+        c*=2;
+        c%=m;
+        f+=((1ll<<i)&n1);
+        f%=m;
+        n/=2;
+    }
+    int ANS = 0;
+    for (int i = 0; i <= j; ++i) {
+        ANS += ((((1ll<<i)%m)*ans[i])%m)*ans[i];
+        ANS%=m;
+    }
+    cout << ANS << endl;
+}
+
+
+signed main() {
+    ios_base::sync_with_stdio(0), cin.tie(0);
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    int q = 1;
+    cin >> q;
+    while (q--) {
+        solve();
+    }
+
+    cout.flush();
+    return 0;
+}
