@@ -1,0 +1,77 @@
+#include <bits/stdc++.h>
+#define int long long
+
+using namespace std;
+struct edge{
+    int v;
+    int c;
+    int f;
+    edge(int v, int c, int f) : v(v), c(c), f(f) {}
+    inline int gc() const{
+        return c-f;
+    }
+};
+vector<vector<int>> g(1e4);
+vector<edge> edges;
+int n,m;
+vector<int> used(1e4,-1);
+int timer = 0;
+int keyCap = -1;
+int dfs(int v = 1,int mnCap = 1e18){
+    if (v==n){
+        return mnCap;
+    }
+    used[v] = timer;
+    for (int num : g[v]){
+        if (edges[num].gc()<(1ll<<keyCap) || used[edges[num].v]==timer){
+            continue;
+        }
+        int cap = dfs(edges[num].v, min(mnCap,edges[num].gc()));
+        if (cap){
+            edges[num].f+=cap;
+            edges[num^1].f-=cap;
+            return cap;
+        }
+    }
+    return 0;
+}
+
+void solve() {
+    cin >> n >> m;
+    for (int i = 0; i < m; ++i) {
+        int v,u,c;
+        cin >> v >> u >> c;
+        g[v].emplace_back(edges.size());
+        edges.emplace_back(u,c,0);
+        g[u].emplace_back(edges.size());
+        edges.emplace_back(v,c,0);
+    }
+    int ans = 0;
+    for (keyCap = 31; keyCap >=0 ; --keyCap) {
+        int x;
+        while (x = dfs()) {
+            timer++;
+            ans+=x;
+        }
+        timer++;
+    }
+    cout << ans << "\n";
+
+
+}
+
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    int q = 1;
+    //cin >> q;
+    while (q--) {
+        solve();
+    }
+
+    cout.flush();
+}
