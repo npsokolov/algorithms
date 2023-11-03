@@ -1,0 +1,90 @@
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+struct edge{
+    int v,u,c,f;
+    edge(int v, int u, int c, int f) : v(v), u(u), c(c), f(f) {}
+    int gc(){
+        return c-f;
+    }
+};
+int n,m;
+vector<edge> edges;
+vector<vector<int>> g(1e4);
+vector<int> dist,ptr;
+bool bfs(){
+    dist.assign(n+1,1e18);
+    queue<int> q;
+    q.emplace(1);
+    dist[1] = 0;
+    while (!q.empty()){
+        int v = q.front();
+        q.pop();
+        for (int i=0; i<g[v].size(); ++i) {
+            int id = g[v][i], to = edges[id].u;
+            if (dist[to] == 1e18 && edges[id].gc()>0) {
+                q.emplace(to);
+                dist[to] = dist[v]+1;
+            }
+        }
+    }
+    return dist[n]!=1e18;
+}
+int dfs(int v,int flow){
+    if (!flow){ return 0;}
+    if (v==n){ return flow;}
+    for (;ptr[v]<g[v].size();++ptr[v]){
+        int id = g[v][ptr[v]];
+        int u = edges[id].u;
+        if (dist[u]==dist[v]+1){
+            int x = dfs(u,min(flow,edges[id].gc()));
+            if (x){
+                edges[id].f+=x;
+                edges[id^1].f-=x;
+                return x;
+            }
+        }
+    }
+    return 0;
+}
+void solve() {
+    cin >> n >> m;
+    dist.resize(n+1);
+    ptr.resize(n+1);
+    for (int i = 0; i < m; ++i) {
+        int v,u,c;
+        cin >> v >> u >> c;
+        g[v].push_back(edges.size());
+        edges.emplace_back(v,u,c,0);
+        g[u].push_back(edges.size());
+        edges.emplace_back(u,v,c,0);
+    }
+    int ans = 0;
+    while (true){
+        if (!bfs()){ break;}
+        int x;
+        ptr.assign(n+1,0);
+        while (x = dfs(1,1e18)){
+            ans+=x;
+        }
+    }
+    cout << ans << endl;
+
+
+}
+
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    int q = 1;
+    //cin >> q;
+    while (q--) {
+        solve();
+    }
+
+    cout.flush();
+}
