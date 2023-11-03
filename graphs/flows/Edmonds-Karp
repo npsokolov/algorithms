@@ -1,0 +1,85 @@
+#include <bits/stdc++.h>
+#define int long long
+
+using namespace std;
+struct edge{
+    int v;
+    int c;
+    int f;
+    int u;
+    edge(int v, int c, int f, int u) : v(v), c(c), f(f), u(u) {}
+    inline int gc() const{
+        return c-f;
+    }
+};
+vector<vector<int>> g(1e4);
+vector<edge> edges;
+int n,m;
+vector<int> used(1e4,-1);
+int timer = 0;
+int bfs(int v = 1, int mnCap = 1e18){
+    queue<pair<int,int>> q;
+    vector<int> par(n+1,-1);
+    q.emplace(v,mnCap);
+    used[v] = timer;
+    while (!q.empty()){
+        auto [u,cap] = q.front();
+        if (u==n){
+            auto p = par[u];
+            while (p!=-1ll){
+                edges[p].f+=cap;
+                edges[p^1].f-=cap;
+                p = par[edges[p].u];
+            }
+            return cap;
+        }
+        q.pop();
+        for (int num : g[u]){
+            int k = edges[num].v;
+            if (used[k]==timer || edges[num].gc()==0){
+                continue;
+            }
+            par[k] = num;
+            used[k] = timer;
+            q.emplace(k,min(cap,edges[num].gc()));
+        }
+    }
+    return 0;
+}
+
+void solve() {
+    cin >> n >> m;
+    for (int i = 0; i < m; ++i) {
+        int v,u,c;
+        cin >> v >> u >> c;
+        g[v].emplace_back(edges.size());
+        edges.emplace_back(u,c,0,v);
+        g[u].emplace_back(edges.size());
+        edges.emplace_back(v,c,0,u);
+    }
+    int ans = 0;
+    int x;
+    while (x = bfs()) {
+        ans+=x;
+        timer++;
+    }
+    cout << ans << "\n";
+
+
+}
+
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    int q = 1;
+    //cin >> q;
+    while (q--) {
+        solve();
+    }
+
+    cout.flush();
+}
