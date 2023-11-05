@@ -1,0 +1,107 @@
+#include <bits/stdc++.h>
+
+#define int long long
+using namespace std;
+struct t {
+    int su = 0, add = 0;
+};
+vector<t> tree(3e6);
+
+void Push(int v) {
+    for (int u: {2 * v, 2 * v + 1}) {
+        tree[u].add += tree[v].add;
+        tree[u].su += tree[v].add;
+    }
+    tree[v].add = 0;
+}
+
+void add(int tl, int tr, int v, int l, int r, int val) {
+    if (tl == l && tr == r) {
+        tree[v].add += val;
+        tree[v].su += val;
+        return;
+    }
+    Push(v);
+    int tm = (tl + tr) >> 1;
+    if (r <= tm) {
+        add(tl, tm, 2 * v, l, r, val);
+    } else if (l > tm) {
+        add(tm + 1, tr, 2 * v + 1, l, r, val);
+    } else {
+        add(tl, tm, 2 * v, l, tm, val);
+        add(tm + 1, tr, 2 * v + 1, tm + 1, r, val);
+    }
+    tree[v].su = max(tree[2 * v].su, tree[2 * v + 1].su);
+}
+
+void sett(int tl, int tr, int v, int pos, int val) {
+    if (tl == tr) {
+        tree[v].su = val;
+        tree[v].add = 0;
+        return;
+    }
+    Push(v);
+    int tm = (tl + tr) >> 1;
+    if (pos > tm) {
+        sett(tm + 1, tr, 2 * v + 1, pos, val);
+    } else {
+        sett(tl, tm, 2 * v, pos, val);
+    }
+    tree[v].su = max(tree[2 * v].su, tree[2 * v + 1].su);
+}
+
+
+void solve() {
+    int n, d, w;
+    cin >> n >> d >> w;
+    vector<pair<int, int>> v(n);
+    vector<vector<int>> cor(5e5 + 100);
+    for (int i = 0; i < n; ++i) {
+        cin >> v[i].first >> v[i].second;
+        cor[v[i].first].emplace_back(v[i].second);
+    }
+    for (int i = 1; i <= d; ++i) {
+        for (int x: cor[i]) {
+            //sett(0,2e5+2,1,x,0);
+        }
+    }
+    for (int i = 1; i <= d; ++i) {
+        for (int x: cor[i]) {
+            add(0, 4e5 + 2, 1, x, x + w - 1, 1);
+        }
+    }
+    int ans = tree[1].su;
+    for (int i = 1; i < 2e5 + 4; ++i) {
+        if (!cor[i].empty()) {
+            for (int x: cor[i]) {
+                //sett(0, 2e5 + 2, 1, i, -1e18);
+                add(0, 4e5 + 2, 1, x, x + w - 1, -1);
+            }
+        }
+        if (!cor[i + d].empty()) {
+            for (int x: cor[i + d]) {
+                add(0, 4e5 + 2, 1, x, x + w - 1, 1);
+            }
+        }
+        ans = max(ans, tree[1].su);
+    }
+    cout << ans << endl;
+
+
+}
+
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    int q = 1;
+    //cin >> q;
+    while (q--) {
+        solve();
+    }
+
+    cout.flush();
+}
