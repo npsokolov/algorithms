@@ -1,0 +1,50 @@
+#include <bits/stdc++.h>
+ 
+using namespace std;
+#define int long long
+vector<int> match;
+vector<bool> used;
+vector<vector<pair<int,int>>> g(1e3+5);
+int mx;
+bool dfs(int v){
+    if (used[v]){
+        return false;
+    }
+    used[v] = true;
+    for (auto& [u,cost] : g[v]){
+        if (cost>mx){
+            continue;
+        }
+        if (match[u]==-1 || dfs(match[u])){
+            match[u] = v;
+            return true;
+        }
+    }
+    return false;
+}
+int n;
+int Kuhn(){
+    int c =0;
+    for (int i = 0; i < n; ++i) {
+        used.assign(200,false);
+        auto f = dfs(i);
+        if (f) c++;
+    }
+    return c;
+}
+
+void solve(){
+  
+}
+
+signed main() {
+    cin.tie(0);
+    ios_base::sync_with_stdio(0);
+    int q = 1;
+    //cin >> q;
+    while (q--){
+        solve();
+    }
+    cout.flush();
+    return 0;
+}
