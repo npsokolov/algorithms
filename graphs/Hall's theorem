@@ -1,0 +1,83 @@
+#include<bits/stdc++.h>
+
+using namespace std;
+void solve() {
+    int n,m;
+    int xdLOL = 1;
+    while (true) {
+        cin >> n >> m;
+        vector<vector<int>> can(m);
+        unordered_map<string,int> mp;
+        vector<int> need(n);
+        if (n==0 && m==0){
+            break;
+        }
+        for (int i = 0; i < n; ++i) {
+            string s;int x;
+            cin >> s >> x;
+            mp[s] = i;
+            need[i] = x;
+        }
+        string rtwergdfsg;
+        getline(cin,rtwergdfsg);
+        vector<vector<int>> da(n);
+        for (int i = 0; i < m; ++i) {
+            string s;
+            getline(cin,s);
+            stringstream ss(s);
+            string word;
+            while (ss >> word) {
+                can[i].push_back(mp[word]);
+            }
+            for (int x : can[i]){
+                da[x].push_back(i);
+            }
+        }
+        int ans = 0;
+        vector<bool> good(1<<n,false);
+        good[0] = true;
+        for (int mask = 0; mask < (1<<n); ++mask) {
+            vector<int> here;
+            bool flag = true;
+            int c = 0;
+            for (int i = 0; i < n; ++i) {
+                if ((mask>>i)&1){
+                    here.emplace_back(i);
+                    if (!good[mask^(1<<i)]){
+                        flag = false;
+                    }
+                }
+            }
+            int many = 0;
+            for (int x : here){
+                many+=need[x];
+            }
+            unordered_set<int> st;
+            for (int x : here){
+                for (int y : da[x]){
+                    st.insert(y);
+                }
+            }
+            if (st.size()>=many && flag){
+                ans = max(ans,(int)here.size());
+                good[mask] = true;
+            }
+        }
+        cout << "Case #" << xdLOL << ": " << ans << endl;
+        xdLOL++;
+    }
+
+
+}
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    int qq = 1;
+    //cin >> qq;
+    while (qq--) {
+        solve();
+    }
+}
