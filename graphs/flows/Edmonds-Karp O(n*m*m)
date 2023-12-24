@@ -4,38 +4,41 @@
 using namespace std;
 struct edge{
     int v;
+    int u;
     int c;
     int f;
-    int u;
-    edge(int v, int c, int f, int u) : v(v), c(c), f(f), u(u) {}
+    edge(int v,int u, int c, int f) : v(v), u(u), c(c), f(f) {}
     inline int gc() const{
         return c-f;
     }
 };
-vector<vector<int>> g(1e4);
+const int SIZE = 1e4;
+vector<vector<int>> g(SIZE);
 vector<edge> edges;
 int n,m;
-vector<int> used(1e4,-1);
+int s;
+int t;
+vector<int> used(SIZE,-1);
 int timer = 0;
-int bfs(int v = 1, int mnCap = 1e18){
+int bfs(int v = s, int mnCap = 1e18){
     queue<pair<int,int>> q;
     vector<int> par(n+1,-1);
     q.emplace(v,mnCap);
     used[v] = timer;
     while (!q.empty()){
         auto [u,cap] = q.front();
-        if (u==n){
+        if (u==t){
             auto p = par[u];
             while (p!=-1ll){
                 edges[p].f+=cap;
                 edges[p^1].f-=cap;
-                p = par[edges[p].u];
+                p = par[edges[p].v];
             }
             return cap;
         }
         q.pop();
         for (int num : g[u]){
-            int k = edges[num].v;
+            int k = edges[num].u;
             if (used[k]==timer || edges[num].gc()==0){
                 continue;
             }
@@ -47,15 +50,22 @@ int bfs(int v = 1, int mnCap = 1e18){
     return 0;
 }
 
+void MakeEdge(int frm,int to,int cap,bool isOriented = true){
+    g[frm].emplace_back(edges.size());
+    edges.emplace_back(frm,to,cap,0);
+    g[to].emplace_back(edges.size());
+    edges.emplace_back(to,frm,isOriented ? 0 : cap,0);
+}
+
+
 void solve() {
     cin >> n >> m;
+    s = 1;
+    t = n;
     for (int i = 0; i < m; ++i) {
         int v,u,c;
         cin >> v >> u >> c;
-        g[v].emplace_back(edges.size());
-        edges.emplace_back(u,c,0,v);
-        g[u].emplace_back(edges.size());
-        edges.emplace_back(v,c,0,u);
+        MakeEdge(v,u,c,false);
     }
     int ans = 0;
     int x;
@@ -64,8 +74,6 @@ void solve() {
         timer++;
     }
     cout << ans << "\n";
-
-
 }
 
 
