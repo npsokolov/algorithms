@@ -14,10 +14,11 @@ struct edge{
 vector<vector<int>> g(1e4);
 vector<edge> edges;
 int n,m;
+int t,s;
 vector<int> used(1e4,-1);
 int timer = 0;
-int dfs(int v = 1,int mnCap = 1e18){
-    if (v==n){
+int dfs(int v = s,int mnCap = 1e18){
+    if (v==t){
         return mnCap;
     }
     used[v] = timer;
@@ -39,15 +40,17 @@ void MakeEdge(int frm,int to,int cap,bool isOriented){
     g[frm].emplace_back(edges.size());
     edges.emplace_back(to,cap,0);
     g[to].emplace_back(edges.size());
-    edges.emplace_back(frm,isOriented ? cap : 0,0);
+    edges.emplace_back(frm,isOriented ? 0 : cap,0);
 }
 
 void solve() {
     cin >> n >> m;
+    s = 1;
+    t = n;
     for (int i = 0; i < m; ++i) {
         int v,u,c;
         cin >> v >> u >> c;
-        MakeEdge(v,u,c,true);
+        MakeEdge(v,u,c,false);
     }
     int x = -1;
     int ans = 0;
