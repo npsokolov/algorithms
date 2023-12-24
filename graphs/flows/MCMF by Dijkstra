@@ -124,7 +124,7 @@ void MakeEdge(int frm,int to,int cap,int cost,bool isOriented){
     g[frm].emplace_back(edges.size());
     edges.emplace_back(frm,to,cap,0,cost);
     g[to].emplace_back(edges.size());
-    edges.emplace_back(to,frm,isOriented ? cap : 0,0,-cost);
+    edges.emplace_back(to,frm,isOriented ? 0 : cap,0,-cost);
 }
 void solve(){
     string text;cin >> text;
@@ -140,15 +140,15 @@ void solve(){
         cin >> str >> a;
         for (char& c : str){
             for (int& l : cnts[c-'a']){
-                MakeEdge(cnt,l,1,0,false);
+                MakeEdge(cnt,l,1,0,true);
             }
-            MakeEdge(ss+i,cnt,1,i+1,false);
+            MakeEdge(ss+i,cnt,1,i+1,true);
             cnt++;
         }
-        MakeEdge(s,ss+i,a,0,false);
+        MakeEdge(s,ss+i,a,0,true);
     }
     for (int i = 0; i < text.size(); ++i) {
-        MakeEdge(i,t,1,0,false);
+        MakeEdge(i,t,1,0,true);
     }
     int x = -1;
     int ans = 0;
