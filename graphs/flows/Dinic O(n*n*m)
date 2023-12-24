@@ -22,10 +22,10 @@ vector<vector<int>> g(SIZE);
 vector<int> dist, ptr;
 
 bool Bfs() {
-    dist.assign(n + 1, INF);
+    dist.assign(SIZE, INF);
     queue<int> q;
-    q.emplace(1);
-    dist[1] = 0;
+    q.emplace(s);
+    dist[s] = 0;
     while (!q.empty()) {
         int v = q.front();
         q.pop();
