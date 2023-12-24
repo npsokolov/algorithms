@@ -22,7 +22,7 @@ vector<int> used(SIZE,-1);
 int timer = 0;
 int bfs(int v = s, int mnCap = 1e18){
     queue<pair<int,int>> q;
-    vector<int> par(n+1,-1);
+    vector<int> par(SIZE,-1);
     q.emplace(v,mnCap);
     used[v] = timer;
     while (!q.empty()){
