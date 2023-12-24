@@ -1,79 +1,88 @@
 #include <bits/stdc++.h>
+
 #define int long long
 using namespace std;
-struct edge{
-    int v,u,c,f;
+
+struct edge {
+    int v, u, c, f;
+
     edge(int v, int u, int c, int f) : v(v), u(u), c(c), f(f) {}
-    int gc(){
-        return c-f;
+
+    int gc() {
+        return c - f;
     }
 };
-int n,m;
-int t,s;
+
+int n, m;
+int t, s;
 const int SIZE = 1e4;
 const int INF = 1e18;
 vector<edge> edges;
 vector<vector<int>> g(SIZE);
-vector<int> dist,ptr;
-bool Bfs(){
-    dist.assign(n+1,INF);
+vector<int> dist, ptr;
+
+bool Bfs() {
+    dist.assign(n + 1, INF);
     queue<int> q;
     q.emplace(1);
     dist[1] = 0;
-    while (!q.empty()){
+    while (!q.empty()) {
         int v = q.front();
         q.pop();
-        for (int i=0; i<g[v].size(); ++i) {
+        for (int i = 0; i < g[v].size(); ++i) {
             int id = g[v][i], to = edges[id].u;
-            if (dist[to] == INF && edges[id].gc()>0) {
+            if (dist[to] == INF && edges[id].gc() > 0) {
                 q.emplace(to);
-                dist[to] = dist[v]+1;
+                dist[to] = dist[v] + 1;
             }
         }
     }
-    return dist[n]!=INF;
+    return dist[t] != INF;
 }
-int Dfs(int v = s,int flow = INF){
-    if (!flow){ return 0;}
-    if (v==n){ return flow;}
-    for (;ptr[v]<g[v].size();++ptr[v]){
+
+int Dfs(int v = s, int flow = INF) {
+    if (!flow) { return 0; }
+    if (v == t) { return flow; }
+    for (; ptr[v] < g[v].size(); ++ptr[v]) {
         int id = g[v][ptr[v]];
         int u = edges[id].u;
-        if (dist[u]==dist[v]+1){
-            int x = Dfs(u,min(flow,edges[id].gc()));
-            if (x){
-                edges[id].f+=x;
-                edges[id^1].f-=x;
+        if (dist[u] == dist[v] + 1) {
+            int x = Dfs(u, min(flow, edges[id].gc()));
+            if (x) {
+                edges[id].f += x;
+                edges[id ^ 1].f -= x;
                 return x;
             }
         }
     }
     return 0;
 }
-void MakeEdge(int frm,int to,int cap,bool isOriented){
+
+void MakeEdge(int frm, int to, int cap, bool isOriented) {
     g[frm].emplace_back(edges.size());
-    edges.emplace_back(frm,to,cap,0);
+    edges.emplace_back(frm, to, cap, 0);
     g[to].emplace_back(edges.size());
-    edges.emplace_back(to,frm,isOriented ? 0 : cap,0);
+    edges.emplace_back(to, frm, isOriented ? 0 : cap, 0);
 }
+
 void solve() {
     cin >> n >> m;
     s = 1;
     t = n;
-    dist.resize(n+1);
-    ptr.resize(n+1);
+    dist.resize(n + 1);
+    ptr.resize(n + 1);
     for (int i = 0; i < m; ++i) {
-        int v,u,c;
+        int v, u, c;
         cin >> v >> u >> c;
-        MakeEdge(v,u,c,false);
+        MakeEdge(v, u, c, false);
     }
     int ans = 0;
-    while (true){
-        if (!Bfs()){ break;}
+    while (true) {
+        if (!Bfs()) { break; }
         int x;
-        ptr.assign(n+1,0);
-        while (x = Dfs()){
-            ans+=x;
+        ptr.assign(n + 1, 0);
+        while (x = Dfs()) {
+            ans += x;
         }
     }
     cout << ans << endl;
