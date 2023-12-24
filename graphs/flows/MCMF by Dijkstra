@@ -11,7 +11,7 @@ using namespace std;
 #define int long long
 int s = 1e4+19, t = 1e4+20;
 const int INF = 1e14;
-vector<int> cost(1e4+200),sz(1e4+200);
+const int SIZE = 1e4+200;
 struct edge{
     int v;
     int u;
@@ -23,54 +23,61 @@ struct edge{
         return c-f;
     }
 };
-int AAA = 0;
-vector<vector<int>> g(1e4+200);
+int totalFlow = 0;
+vector<vector<int>> g(SIZE);
 vector<edge> edges;
 int n;
-vector<int> dist(1e4+200, INF);
+vector<int> p(SIZE, INF);
 void FordBellman(){
-    dist[s] = 0;
-    for (int iteration = 0; iteration < 10; ++iteration) {
-        for (int v = 0; v < 1e4+200; ++v) {
-            if (dist[v] == INF) {
+    p[s] = 0;
+    unordered_set<int> vertices;
+    for (int i = 0; i < SIZE; ++i) {
+        vertices.emplace(i);
+    }
+    while (!vertices.empty()){
+        unordered_set<int> updatedVertices;
+        for (int v : vertices){
+            if (p[v] == INF) {
                 continue;
             }
             for (auto e : g[v]) {
                 auto& [ver,u,cap,f,cst] = edges[e];
-                if (dist[u]>dist[v] + cst && cap-f>0){
-                    dist[u] = dist[v]+cst;
+                if (p[u]>p[v] + cst && cap-f>0){
+                    p[u] = p[v]+cst;
+                    updatedVertices.emplace(u);
                 }
             }
         }
+        swap(vertices,updatedVertices);
     }
 }
-int D(){
-    priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> q;
-    vector<int> dist1(1e4+200,INF);
-    vector<int> from(1e4+200,-1);
-    vector<bool> used(1e4+200,false);
-    q.emplace(0,s);
-    dist1[s] = 0;
-    while (!q.empty()){
-        auto [w,v] = q.top();
-        q.pop();
-        if (used[v]){
-            continue;
-        }
-        used[v] = true;
-        for (int e : g[v]){
-            auto& [ver,u,cap,f,cst] = edges[e];
-            int w1 = dist1[v] + cst + dist[v] - dist[u];
-            if (cap-f>0 && w1<0){
-                throw runtime_error("LOL");
-            }
-            if (dist1[u]>w1 && cap-f>0){
-                from[u] = e;
-                dist1[u] = w1;
-                q.emplace(w1,u);
-            }
+vector<int> from;
+vector<bool> usedFlow;
+void LetFlow(int v){
+    if (usedFlow[v]) return;
+    if (v==t){
+        return;
+    }
+    usedFlow[v] = true;
+    for (auto e : g[v]){
+        auto& [ver,u,cap,f,cst] = edges[e];
+        if (cap-f<=0 || usedFlow[u]) continue;
+        int w = cst + p[v] - p[u];
+        if (w==0){
+            from[u] = e;
+            LetFlow(u);
         }
     }
+}
+int Dijkstra(){
+    priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> q;
+    vector<int> dist(SIZE,INF);
+    vector<bool> used(SIZE,false);
+    from.assign(SIZE,-1);
+    usedFlow.assign(SIZE,false);
+    q.emplace(0,s);
+    dist[s] = 0;
+    LetFlow(s);
     if (from[t]==-1){
         return 0;
     }
@@ -88,11 +95,36 @@ int D(){
         edges[from[x]^1].f-=flow;
         x = edges[from[x]].v;
     }
-    AAA+=flow;
-    for (int i = 0; i < 1e4+200; ++i) {
-        dist[i]+=dist1[i];
+    totalFlow+=flow;
+    while (!q.empty()){
+        auto [w,v] = q.top();
+        q.pop();
+        if (used[v]){
+            continue;
+        }
+        used[v] = true;
+        for (int e : g[v]){
+            auto& [ver,u,cap,f,cst] = edges[e];
+            int w1 = dist[v] + cst + p[v] - p[u];
+            if (cap-f>0 && w1<0){
+                throw runtime_error("=========LOL==========");
+            }
+            if (dist[u]>w1 && cap-f>0){
+                dist[u] = w1;
+                q.emplace(w1,u);
+            }
+        }
+    }
+    for (int i = 0; i < SIZE; ++i) {
+        p[i]+=dist[i];
     }
     return flow*c;
+}
+void MakeEdge(int frm,int to,int cap,int cost,bool isOriented){
+    g[frm].emplace_back(edges.size());
+    edges.emplace_back(frm,to,cap,0,cost);
+    g[to].emplace_back(edges.size());
+    edges.emplace_back(to,frm,isOriented ? cap : 0,0,-cost);
 }
 void solve(){
     string text;cin >> text;
@@ -108,43 +140,29 @@ void solve(){
         cin >> str >> a;
         for (char& c : str){
             for (int& l : cnts[c-'a']){
-                g[cnt].emplace_back(edges.size());
-                edges.emplace_back(cnt,l,1,0,0);
-                g[l].emplace_back(edges.size());
-                edges.emplace_back(l,cnt,0,0,0);
+                MakeEdge(cnt,l,1,0,false);
             }
-            g[ss+i].emplace_back(edges.size());
-            edges.emplace_back(ss+i,cnt,1,0,i+1);
-            g[cnt].emplace_back(edges.size());
-            edges.emplace_back(cnt,ss+i,0,0,-i-1);
+            MakeEdge(ss+i,cnt,1,i+1,false);
             cnt++;
         }
-        g[s].emplace_back(edges.size());
-        edges.emplace_back(s,ss+i,a,0,0);
-        g[ss+i].emplace_back(edges.size());
-        edges.emplace_back(ss+i,s,0,0,0);
+        MakeEdge(s,ss+i,a,0,false);
     }
     for (int i = 0; i < text.size(); ++i) {
-        g[i].emplace_back(edges.size());
-        edges.emplace_back(i,t,1,0,0);
-        g[t].emplace_back(edges.size());
-        edges.emplace_back(t,i,0,0,0);
+        MakeEdge(i,t,1,0,false);
     }
     int x = -1;
     int ans = 0;
     FordBellman();
-    while (x = D()){
+    while (x = Dijkstra()){
         ans+=x;
     }
-    if (AAA!=text.size()){
+    if (totalFlow!=text.size()){
         cout << -1 << endl;
         return;
     }
     cout << ans << endl;
 }
 signed main() {
-    freopen("input.txt", "r", stdin);
-    freopen("output.txt", "w", stdout);
     ios::sync_with_stdio(0);
     cin.tie(0);
     int qq = 1;
