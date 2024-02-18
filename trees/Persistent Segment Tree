@@ -1,0 +1,175 @@
+#pragma GCC optimize("O3,unroll-loops")
+#pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
+#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include <chrono>
+
+using namespace std;
+struct Node {
+    Node *l = nullptr;
+    Node *r = nullptr;
+    int ans = 0;
+    int push = 0;
+
+    Node(const Node &other) : l(other.l), r(other.r), ans(other.ans), push(other.push) {}
+
+    Node() {}
+};
+
+vector<int> a, tree(4e5 + 100, 0);
+vector<Node *> root(1e5 + 100, nullptr);
+
+void build(Node *v, int tl, int tr) {
+    if (tl == tr) {
+        return;
+    }
+    int tm = (tl + tr) >> 1;
+    v->l = new Node();
+    v->r = new Node();
+    build(v->l, tl, tm);
+    build(v->r, tm + 1, tr);
+}
+
+void push(Node *v) {
+    if (v->push == 0){
+        return;
+    }
+    v->l = new Node(*v->l);
+    v->r = new Node(*v->r);
+    v->l->ans += v->push;
+    v->r->ans += v->push;
+    v->l->push += v->push;
+    v->r->push += v->push;
+    v->push = 0;
+}
+
+int get(int tl, int tr, int l, int r, Node *v) {
+    if (tl == l && tr == r) {
+        return v->ans;
+    }
+    push(v);
+    int tm = (tl + tr) >> 1;
+    if (r <= tm) {
+        return get(tl, tm, l, r, v->l);
+    } else if (l > tm) {
+        return get(tm + 1, tr, l, r, v->r);
+    } else {
+        return max(get(tl, tm, l, tm, v->l), get(tm + 1, tr, tm + 1, r, v->r));
+    }
+}
+
+Node *pls(int tl, int tr, int l, int r, int add, Node *v) {
+    Node *nv = v ? new Node(*v) : new Node();
+    if (tl == l && tr == r) {
+        nv->ans += add;
+        nv->push += add;
+        return nv;
+    }
+    push(nv);
+    int tm = (tl + tr) >> 1;
+    if (r <= tm) {
+        nv->l = pls(tl, tm, l, r, add, nv->l);
+    } else if (l > tm) {
+        nv->r = pls(tm + 1, tr, l, r, add, nv->r);
+    } else {
+        nv->l = pls(tl, tm, l, tm, add, nv->l);
+        nv->r = pls(tm + 1, tr, tm + 1, r, add, nv->r);
+    }
+    nv->ans = max(nv->l->ans, nv->r->ans);
+    return nv;
+}
+
+
+void solve() {
+    int n;
+    cin >> n;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        cin >> x;
+        a.emplace_back(x);
+    }
+    vector<pair<int, int>> vec;
+    for (int i = 0; i < n; ++i) {
+        vec.emplace_back(a[i], i);
+    }
+    std::sort(vec.begin(), vec.end());
+    std::reverse(vec.begin(), vec.end());
+    map<int, int> mp;
+    Node* rt = new Node();
+    build(rt, 0, n - 1);
+    root[n+1] = rt;
+    int ind = n+1;
+    set<int> st;
+    for (int i = -1; i <= n; ++i) {
+        st.insert(i);
+    }
+    set<int,std::greater<>> st1;
+    for (int i = -1; i <= n; ++i) {
+        st1.insert(i);
+    }
+    mp[n+1] = 0;
+    for (auto [val, num]: vec) {
+        ind--;
+        mp[ind] = val;
+        int from,to;
+        auto ll = st1.upper_bound(num);
+        from = (*ll)+1;
+        auto rr = st.upper_bound(num);
+        to = (*rr)-1;
+        int add = to-num+1;
+        root[ind] = pls(0, n - 1, from, num, add, root[ind+1]);
+        st.erase(num);
+        st1.erase(num);
+    }
+    if (ind!=1){
+        throw std::runtime_error("lol");
+    }
+    int q;
+    cin >> q;
+    auto& rtt = root;
+    while (q--) {
+        int from, to, w;
+        cin >> from >> to >> w;
+        int l = 1, r = n + 1;
+        from--;to--;
+        while (r - l > 1) {
+            int m = (l + r) >> 1;
+            Node* v = root[m];
+            int h = mp[m];
+            int x = get(0, n - 1, from, to - w + 1, v);
+            if (x < w) {
+                r = m;
+            } else {
+                l = m;
+            }
+        }
+        cout << mp[l] << endl;
+    }
+}
+
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios_base::sync_with_stdio(false);
+    cin.tie(0);
+    cout.tie(0);
+    //int q; cin >> q; while(q--)
+    solve();
+}
