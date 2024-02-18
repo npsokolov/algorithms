@@ -1,0 +1,147 @@
+#include <iostream>
+#include <map>
+#include <memory>
+#include <vector>
+#include <unordered_set>
+#include <cstring>
+#include <set>
+#include <algorithm>
+#include <queue>
+#include <memory>
+using namespace std;
+#define int long long
+class SplayTree{
+public:
+    struct Node{
+        Node* l = nullptr;
+        Node* r = nullptr;
+        int x = 0;
+        Node(int y){
+            x = y;
+        }
+    };
+    Node* RightRotate(Node* oldRoot){
+        auto newRoot = oldRoot->l;
+        oldRoot->l = newRoot->r;
+        newRoot->r = oldRoot;
+        return newRoot;
+    }
+    Node* LeftRotate(Node* oldRoot){
+        auto newRoot = oldRoot->r;
+        oldRoot->r = newRoot->l;
+        newRoot->l = oldRoot;
+        return newRoot;
+    }
+public:
+    SplayTree() {}
+    Node* Splay(int x,Node* root){
+        if (!root || root->x == x)
+            return root;
+        if (root->x > x){ // в левом поддереве
+            if (!root->l) return root;
+            if (root->l->x > x){// left left
+                root->l->l = Splay(x,root->l->l);
+                root = RightRotate(root);
+            }else if (root->l->x < x){// left right
+                root->l->r = Splay(x,root->l->r);
+                if (root->l->r) root->l = LeftRotate(root->l);
+            }
+            return (!root->l)? root: RightRotate(root);
+        }else{
+            if (!root->r) return root;
+            // right left
+            if (root->r->x > x)
+            {
+                root->r->l = Splay(x,root->r->l);
+                if (root->r->l) root->r = RightRotate(root->r);
+            }
+            else if (root->r->x < x)
+            {
+                root->r->r = Splay(x,root->r->r);
+                root = LeftRotate(root);
+            }
+
+            // Выполняем второй разворот для root
+            return (!root->r)? root: LeftRotate(root);
+        }
+    }
+    Node* Add(int x,Node* root){
+        auto node = new Node(x);
+        if (!root){
+            return node;
+        }
+        root = Splay(x,root);
+        if (root->x==x){
+            return root;
+        }
+        if (root->x<x){
+            node->l = root;
+            node->r = root->r;
+            root->r = nullptr;
+            return node;
+        }
+        if (root->x>x){
+            node->r = root;
+            node->l = root->l;
+            root->l= nullptr;
+            return node;
+        }
+    }
+    Node* Find(int x,Node* root){
+        return Splay(x,root);
+    }
+    pair<Node*,Node*> Split(int x,Node* root){
+        root = Splay(x,root);
+        auto root1 = root->r;
+        root->r = nullptr;
+        return make_pair(root,root1);
+    }
+    Node* Merge(Node* root1, Node* root2){
+        root1 = Splay(1e18,root1);
+        root2 = Splay(-1e18,root2);
+        root1->r = root2;
+        return root1;
+    }
+    Node* Remove(int x,Node* root){
+        root = Splay(x,root);
+        if (root->x!=x){
+            return root;
+        }
+        auto [r1,r2] = Split(x,root);
+        auto [r11,r12] = Split(x-1,r1);
+        return Merge(r11,r2);
+    }
+};
+void solve(){
+    int p;
+    auto t = SplayTree();
+    SplayTree::Node* root = nullptr;
+    int n;
+    cin >> n;
+    for (int i = 0; i < n; ++i) {
+        int x;cin >> x;
+        root = t.Add(x,root);
+    }
+    int m;
+    cin >> m;
+    int cnt = 0;
+    for (int i = 0; i < m; ++i) {
+        int x;cin >> x;
+        root = t.Find(x,root);
+        if (x==root->x) cnt++;
+    }
+    cout << cnt << endl;
+
+    //cout << t.Find(10,root)->x << endl;
+}
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    int qq = 1;
+    //cin >> qq;
+    while (qq--) {
+        solve();
+    }
+}
