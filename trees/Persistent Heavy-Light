@@ -1,0 +1,183 @@
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include <chrono>
+
+using namespace std;
+struct Node {
+    Node *l = nullptr;
+    Node *r = nullptr;
+    int ans = 1e9;
+    int push = 0;
+
+    Node(const Node &other) : l(other.l), r(other.r), ans(other.ans), push(other.push) {}
+
+    Node() {}
+};
+constexpr int SIZE = 1e5+10;
+vector<Node *> root(SIZE, nullptr);
+void build(Node *v, int tl, int tr) {
+    if (tl == tr) {
+        return;
+    }
+    int tm = (tl + tr) >> 1;
+    v->l = new Node();
+    v->r = new Node();
+    build(v->l, tl, tm);
+    build(v->r, tm + 1, tr);
+}
+
+vector<int> parent, depth, heavy, head, pos;
+int cur_pos;
+
+int dfs(int v, vector<vector<int>> const& adj) {
+    int size = 1;
+    int max_c_size = 0;
+    for (int c : adj[v]) {
+        if (c != parent[v]) {
+            parent[c] = v, depth[c] = depth[v] + 1;
+            int c_size = dfs(c, adj);
+            size += c_size;
+            if (c_size > max_c_size)
+                max_c_size = c_size, heavy[v] = c;
+        }
+    }
+    return size;
+}
+vector<int> maxes(SIZE);
+int decompose(int v, int h, vector<vector<int>> const& adj) {
+    head[v] = h, pos[v] = cur_pos++;
+    maxes[v]=pos[v];
+    if (heavy[v] != -1)
+        maxes[v]=max(decompose(heavy[v], h, adj),maxes[v]);
+    for (int c : adj[v]) {
+        if (c != parent[v] && c != heavy[v])
+            maxes[v]=max(decompose(c, c, adj),maxes[v]);
+    }
+    return maxes[v];
+}
+int n,rr;
+void init(vector<vector<int>> const& adj) {
+    //int n = adj.size()+10;
+    parent = vector<int>(SIZE,-1);
+    depth = vector<int>(SIZE,0);
+    heavy = vector<int>(SIZE, -1);
+    head = vector<int>(SIZE);
+    pos = vector<int>(SIZE);
+    cur_pos = 0;
+    dfs(rr, adj);
+    decompose(rr, 0, adj);
+}
+vector<vector<int>> g(SIZE);
+
+Node* SETT(int poss, int value, int tl, int tr, Node* v){
+    Node *nv = v ? new Node(*v) : new Node();
+    if (tl==tr){
+        nv->ans = value;
+        return nv;
+    }
+    int tm = (tl+tr)>>1;
+    Node *nnv;
+    if (poss<=tm){
+        nv->l = SETT(poss,value,tl,tm,nv->l);
+    }else{
+        nv->r = SETT(poss,value,tm+1,tr,nv->r);
+    }
+    nv->ans = min(nv->l->ans,nv->r->ans);
+    return nv;
+}
+
+int GETT(int l,int r, int tl, int tr, Node* v){
+    if (tl==l && tr==r){
+        return v->ans;
+    }
+    int tm = (tl+tr)>>1;
+    if (r<=tm){
+        return GETT(l,r,tl,tm,v->l);
+    }else if (l>tm){
+        return GETT(l,r,tm+1,tr,v->r);
+    }else{
+        return min(GETT(l,tm,tl,tm,v->l),GETT(tm+1,r,tm+1,tr,v->r));
+    }
+}
+
+Node* SET(int poss, int value,Node* v){
+    return SETT(poss,value,0,n-1,v);
+}
+
+int GET(int l,int r,Node* v){
+    return GETT(l,r,0,n-1,v);
+}
+
+void solve() {
+    cin >> n >> rr;
+    rr--;
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> a[i];
+    }
+    for (int i = 0; i < n - 1; ++i) {
+        int v,u;
+        cin >> v >> u;
+        v--;
+        u--;
+        g[v].push_back(u);
+        g[u].push_back(v);
+    }
+    init(g);
+    auto rt = new Node();
+    build(rt,0,n-1);
+    root[0] = rt;
+    vector<int> last(n,-1);
+    vector<vector<int>> d(n+3);
+    for (int i = 0; i < n; ++i) {
+        d[depth[i]].push_back(i);
+    }
+    int ind = 0;
+    for (auto& v : d){
+        if (v.empty()){
+            break;
+        }
+        for (int i : v){
+            root[ind] = SET(pos[i],a[i],rt);
+            rt = root[ind];
+        }
+        ind++;
+    }
+    int m;
+    cin >> m;
+    int ans = 0;
+    for (int kk = 1; kk <= m; ++kk) {
+        int p,q;
+        cin >> p >> q;
+        int x = (p+ans)%n;
+        int k = (q+ans)%n;
+        cout << (ans=GET(pos[x],maxes[x],root[min(ind-1,depth[x]+k)])) << "\n";
+    }
+
+}
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    int qq = 1;
+    //cin >> qq;
+    while (qq--) {
+        solve();
+    }
+}
