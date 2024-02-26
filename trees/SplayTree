@@ -8,132 +8,310 @@
 #include <algorithm>
 #include <queue>
 #include <memory>
+#include <map>
+#include <unordered_map>
+#include <array>
+
 using namespace std;
 #define int long long
-class SplayTree{
-public:
-    struct Node{
-        Node* l = nullptr;
-        Node* r = nullptr;
-        int x = 0;
-        Node(int y){
-            x = y;
+#define ld long double
+#define endl "\n"
+
+struct SplayTree {
+    struct Node {
+        int ch[2];
+        int push = 0;
+        int val = 0;
+        int mn = 1e15;
+        int p = 0;
+        int size = 0;
+        int rev = 0;
+
+        Node(int x) {
+            val = x;
+            ch[0] = ch[1] = 0;
+            size = 1;
+            mn = x;
         }
     };
-    Node* RightRotate(Node* oldRoot){
-        auto newRoot = oldRoot->l;
-        oldRoot->l = newRoot->r;
-        newRoot->r = oldRoot;
-        return newRoot;
-    }
-    Node* LeftRotate(Node* oldRoot){
-        auto newRoot = oldRoot->r;
-        oldRoot->r = newRoot->l;
-        newRoot->l = oldRoot;
-        return newRoot;
-    }
-public:
-    SplayTree() {}
-    Node* Splay(int x,Node* root){
-        if (!root || root->x == x)
-            return root;
-        if (root->x > x){ // в левом поддереве
-            if (!root->l) return root;
-            if (root->l->x > x){// left left
-                root->l->l = Splay(x,root->l->l);
-                root = RightRotate(root);
-            }else if (root->l->x < x){// left right
-                root->l->r = Splay(x,root->l->r);
-                if (root->l->r) root->l = LeftRotate(root->l);
-            }
-            return (!root->l)? root: RightRotate(root);
-        }else{
-            if (!root->r) return root;
-            // right left
-            if (root->r->x > x)
-            {
-                root->r->l = Splay(x,root->r->l);
-                if (root->r->l) root->r = RightRotate(root->r);
-            }
-            else if (root->r->x < x)
-            {
-                root->r->r = Splay(x,root->r->r);
-                root = LeftRotate(root);
-            }
 
-            // Выполняем второй разворот для root
-            return (!root->r)? root: LeftRotate(root);
+    vector<Node> tree;
+
+    SplayTree() {
+        tree.reserve(1e5+100);
+        tree.emplace_back(1e15);
+        tree[0].size = 0;
+    }
+
+    void PushDown(int v) {
+        for (int i = 0; i < 2; ++i) {
+            if (!tree[v].ch[i]) continue;
+            tree[tree[v].ch[i]].mn += tree[v].push;
+            tree[tree[v].ch[i]].val += tree[v].push;
+            tree[tree[v].ch[i]].push += tree[v].push;
+        }
+        if (tree[v].rev) {
+            for (int i = 0; i < 2; ++i) {
+                swap(tree[tree[v].ch[i]].ch[0], tree[tree[v].ch[i]].ch[1]);
+                tree[tree[v].ch[i]].rev ^= 1;
+            }
+            tree[v].rev = 0;
+        }
+        tree[v].push = 0;
+    }
+
+    void PushUp(int v) {
+        int l = tree[v].ch[0];
+        int r = tree[v].ch[1];
+        tree[v].mn = min({tree[l].mn, tree[r].mn, tree[v].val});
+        tree[v].size = 1 + tree[r].size + tree[l].size;
+    }
+
+    void RotateRight(int v) {
+        auto &x = tree[v];
+        auto &p = tree[x.p];
+        p.ch[0] = x.ch[1];
+        tree[x.ch[1]].p = x.p;
+        x.ch[1] = x.p;
+        x.p = p.p;
+        p.p = v;
+        for (int i = 0; i < 2; ++i) {
+            if (tree[x.p].ch[i] == x.ch[1]) {
+                tree[x.p].ch[i] = v;
+            }
+        }
+        PushUp(x.ch[1]);
+        PushUp(v);
+    }
+
+    void RotateLeft(int v) {
+        auto &x = tree[v];
+        auto &p = tree[x.p];
+        p.ch[1] = x.ch[0];
+        tree[x.ch[0]].p = x.p;
+        x.ch[0] = x.p;
+        x.p = p.p;
+        p.p = v;
+        for (int i = 0; i < 2; ++i) {
+            if (tree[x.p].ch[i] == x.ch[0]) {
+                tree[x.p].ch[i] = v;
+            }
+        }
+        PushUp(x.ch[0]);
+        PushUp(v);
+    }
+
+    void Splay(int v) {
+        while (tree[v].p) {
+            int p = tree[v].p;
+            int g = tree[p].p;
+            if (v == tree[p].ch[0]) {
+                if (!g) {
+                    RotateRight(v);
+                } else if (p == tree[g].ch[0]) {
+                    RotateRight(p);
+                    RotateRight(v);
+                } else {
+                    RotateRight(v);
+                    RotateLeft(v);
+                }
+            } else {
+                if (!g) {
+                    RotateLeft(v);
+                } else if (p == tree[g].ch[0]) {
+                    RotateLeft(v);
+                    RotateRight(v);
+                } else {
+                    RotateLeft(p);
+                    RotateLeft(v);
+                }
+            }
         }
     }
-    Node* Add(int x,Node* root){
-        auto node = new Node(x);
-        if (!root){
-            return node;
+
+    int FindK(int k, int v) {
+        PushDown(v);
+        int l = tree[v].ch[0];
+        int r = tree[v].ch[1];
+        if (k == tree[l].size + 1) {
+            return v;
         }
-        root = Splay(x,root);
-        if (root->x==x){
-            return root;
-        }
-        if (root->x<x){
-            node->l = root;
-            node->r = root->r;
-            root->r = nullptr;
-            return node;
-        }
-        if (root->x>x){
-            node->r = root;
-            node->l = root->l;
-            root->l= nullptr;
-            return node;
+        if (k > tree[l].size) {
+            return FindK(k - tree[l].size - 1, r);
+        } else {
+            return FindK(k, l);
         }
     }
-    Node* Find(int x,Node* root){
-        return Splay(x,root);
+
+    pair<int, int> Split(int k, int root) {
+        int v = FindK(k, root);
+        Splay(v);
+        int u = tree[v].ch[1];
+        tree[u].p = 0;
+        tree[v].ch[1] = 0;
+        PushUp(v);
+        return make_pair(v, u);
     }
-    pair<Node*,Node*> Split(int x,Node* root){
-        root = Splay(x,root);
-        auto root1 = root->r;
-        root->r = nullptr;
-        return make_pair(root,root1);
+
+    int Merge(int v, int u) {
+        int sz = tree[v].size;
+        int root = FindK(sz, v);
+        Splay(root);
+        tree[root].ch[1] = u;
+        tree[u].p = root;
+        PushUp(root);
+        return root;
     }
-    Node* Merge(Node* root1, Node* root2){
-        root1 = Splay(1e18,root1);
-        root2 = Splay(-1e18,root2);
-        root1->r = root2;
-        return root1;
-    }
-    Node* Remove(int x,Node* root){
-        root = Splay(x,root);
-        if (root->x!=x){
-            return root;
+
+    void Add(int l, int r, int x, int &root) {
+        if (l == 1) {
+            auto [tl, tr] = Split(r, root);
+            tree[tl].push += x;
+            tree[tl].val += x;
+            root = Merge(tl, tr);
+        } else {
+            auto [tl, tx] = Split(l - 1, root);
+            auto [tm, tr] = Split(r - l + 1, tx);
+            tree[tm].push += x;
+            tree[tm].val += x;
+            int rx = Merge(tm, tr);
+            root = Merge(tl, rx);
         }
-        auto [r1,r2] = Split(x,root);
-        auto [r11,r12] = Split(x-1,r1);
-        return Merge(r11,r2);
+    }
+
+    int Min(int l, int r, int &root) {
+        int ans = 1e18;
+        if (l == 1) {
+            auto [tl, tr] = Split(r, root);
+            ans = tree[tl].mn;
+            root = Merge(tl, tr);
+        } else {
+            auto [tl, tx] = Split(l - 1, root);
+            auto [tm, tr] = Split(r - l + 1, tx);
+            ans = tree[tm].mn;
+            tx = Merge(tm, tr);
+            root = Merge(tl, tx);
+        }
+        return ans;
+    }
+
+    void Insert(int pos, int val, int &root) {
+        int v = FindK(pos, root);
+        Splay(v);
+        root = v;
+        int u = tree[v].ch[1];
+        tree.emplace_back(val);
+        tree[v].ch[1] = tree.size() - 1;
+        tree[tree.size() - 1].ch[1] = u;
+        tree[u].p = tree.size() - 1;
+        tree[tree.size() - 1].p = v;
+        PushUp(tree.size() - 1);
+        PushUp(v);
+    }
+
+    void Delete(int pos, int &root) {
+        auto [l, r] = Split(pos, root);
+        l = tree[l].ch[0];
+        tree[l].p = 0;
+        if (l != 0) {
+            root = Merge(l, r);
+        } else{
+            root = r;
+        }
+        if (root==0){
+            throw runtime_error("lol");
+        }
+    }
+
+    void Reverse(int l, int r, int &root) {
+        if (l == 1) {
+            auto [tl, tr] = Split(r, root);
+            tree[tl].rev ^= 1;
+            swap(tree[tl].ch[0], tree[tl].ch[1]);
+            root = Merge(tl, tr);
+        } else {
+            auto [tl, tx] = Split(l - 1, root);
+            auto [tm, tr] = Split(r - l + 1, tx);
+            tree[tm].rev ^= 1;
+            swap(tree[tm].ch[0], tree[tm].ch[1]);
+            tx = Merge(tm, tr);
+            root = Merge(tl, tx);
+        }
+    }
+
+    void Revolve(int l, int r, int t, int &root) {
+        t%=(r-l+1);
+        if (t==0){
+            return;
+        }
+        if (l == 1) {
+            auto [tl, tr] = Split(r, root);
+            auto [tls, trs] = Split(tree[tl].size-t, tl);
+            tl = Merge(trs, tls);
+            root = Merge(tl,tr);
+        } else {
+            auto [tl, tx] = Split(l - 1, root);
+            auto [tm, tr] = Split(r - l + 1, tx);
+            auto [tml, tmr] = Split(tree[tm].size-t, tm);
+            tm = Merge(tmr,tml);
+            tx = Merge(tm,tr);
+            root = Merge(tl,tx);
+        }
+    }
+    void PrintTree(int v){
+        if (tree[v].size==1){
+            cout << tree[v].val << " ";
+            return;
+        }
+        if (tree[v].ch[0]){
+            PrintTree(tree[v].ch[0]);
+        }
+        cout << tree[v].val << " ";
+        if (tree[v].ch[1]){
+            PrintTree(tree[v].ch[1]);
+        }
+    }
+    void Build(vector<int>& info, int& root){
+        int pos = 1;
+        while(pos!=info.size()){
+            tree.emplace_back(info[pos]);
+            tree.back().p = pos-1;
+            if (pos!=info.size()-1){
+                tree.back().ch[1] = pos+1;
+            }
+            pos++;
+        }
     }
 };
-void solve(){
-    int p;
-    auto t = SplayTree();
-    SplayTree::Node* root = nullptr;
-    int n;
-    cin >> n;
-    for (int i = 0; i < n; ++i) {
-        int x;cin >> x;
-        root = t.Add(x,root);
-    }
-    int m;
-    cin >> m;
-    int cnt = 0;
-    for (int i = 0; i < m; ++i) {
-        int x;cin >> x;
-        root = t.Find(x,root);
-        if (x==root->x) cnt++;
-    }
-    cout << cnt << endl;
 
-    //cout << t.Find(10,root)->x << endl;
+void solve() {
+    int n,m;
+    cin >> n >> m;
+    SplayTree tree = SplayTree();
+    int root = 1;
+    vector<int> vec(n+1);
+    for (int i = 1; i <= n; ++i) {
+        vec[i] = i;
+    }
+    tree.Build(vec,root);
+    while (m--){
+        int l,r;
+        cin >> l >> r;
+        if (l==1){
+            auto [tl,tr] = tree.Split(r,root);
+            root = tree.Merge(tr,tl);
+        }else {
+            auto [tl,tx] = tree.Split(l - 1, root);
+            auto [tm,tr] = tree.Split(r - l + 1, tx);
+            tx = tree.Merge(tm,tl);
+            root = tree.Merge(tx,tr);
+        }
+    }
+    tree.PrintTree(root);
+    cout << endl;
 }
+
+
 signed main() {
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
@@ -145,3 +323,4 @@ signed main() {
         solve();
     }
 }
+
