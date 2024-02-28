@@ -1,0 +1,292 @@
+#include <iostream>
+#include <map>
+#include <memory>
+#include <vector>
+#include <unordered_set>
+#include <cstring>
+#include <set>
+#include <algorithm>
+#include <queue>
+#include <memory>
+#include <map>
+#include <unordered_map>
+#include <array>
+
+using namespace std;
+#define int long long
+#define ld long double
+#define endl "\n"
+
+struct SplayTree {
+    struct Node {
+        int ch[2];
+        int push = 0;
+        int val = 0;
+        int mn = 1e15;
+        int p = 0;
+        int size = 0;
+        int rev = 0;
+        int pp = 0;
+
+        Node(int x) {
+            val = x;
+            ch[0] = ch[1] = 0;
+            size = 1;
+            mn = x;
+        }
+    };
+
+    vector<Node> tree;
+
+    SplayTree() {
+        tree.reserve(1e5+100);
+        tree.emplace_back(1e15);
+        tree[0].size = 0;
+    }
+
+    void PrintTree(int v){
+        PushDown(v);
+        if (tree[v].size==1){
+            cout << tree[v].val << " ";
+            return;
+        }
+        if (tree[v].ch[0]){
+            PrintTree(tree[v].ch[0]);
+        }
+        cout << tree[v].val << " ";
+        if (tree[v].ch[1]){
+            PrintTree(tree[v].ch[1]);
+        }
+    }
+    void Build(vector<int>& info){
+        int pos = 1;
+        while(pos!=info.size()){
+            tree.emplace_back(info[pos]);
+            pos++;
+        }
+    }
+
+    void PushDown(int v) {
+        for (int i = 0; i < 2; ++i) {
+            if (!tree[v].ch[i]) continue;
+            tree[tree[v].ch[i]].mn += tree[v].push;
+            tree[tree[v].ch[i]].val += tree[v].push;
+            tree[tree[v].ch[i]].push += tree[v].push;
+        }
+        if (tree[v].rev) {
+            for (int i = 0; i < 2; ++i) {
+                swap(tree[tree[v].ch[i]].ch[0], tree[tree[v].ch[i]].ch[1]);
+                tree[tree[v].ch[i]].rev ^= 1;
+            }
+            tree[v].rev = 0;
+        }
+        tree[v].push = 0;
+    }
+
+    void PushUp(int v) {
+        int l = tree[v].ch[0];
+        int r = tree[v].ch[1];
+        tree[v].mn = min({tree[l].mn, tree[r].mn, tree[v].val});
+        tree[v].size = 1 + tree[r].size + tree[l].size;
+    }
+
+    void RotateRight(int v) {
+        auto &x = tree[v];
+        auto &p = tree[x.p];
+        p.ch[0] = x.ch[1];
+        tree[x.ch[1]].p = x.p;
+        x.ch[1] = x.p;
+        x.p = p.p;
+        p.p = v;
+        for (int i = 0; i < 2; ++i) {
+            if (tree[x.p].ch[i] == x.ch[1]) {
+                tree[x.p].ch[i] = v;
+            }
+        }
+        PushUp(x.ch[1]);
+        PushUp(v);
+        x.pp = p.pp;
+        p.pp = 0;
+    }
+
+    void RotateLeft(int v) {
+        auto &x = tree[v];
+        auto &p = tree[x.p];
+        p.ch[1] = x.ch[0];
+        tree[x.ch[0]].p = x.p;
+        x.ch[0] = x.p;
+        x.p = p.p;
+        p.p = v;
+        for (int i = 0; i < 2; ++i) {
+            if (tree[x.p].ch[i] == x.ch[0]) {
+                tree[x.p].ch[i] = v;
+            }
+        }
+        PushUp(x.ch[0]);
+        PushUp(v);
+        x.pp = p.pp;
+        p.pp = 0;
+    }
+
+    void Splay(int v) {
+        while (tree[v].p) {
+            int p = tree[v].p;
+            int g = tree[p].p;
+            if (v == tree[p].ch[0]) {
+                if (!g) {
+                    RotateRight(v);
+                } else if (p == tree[g].ch[0]) {
+                    RotateRight(p);
+                    RotateRight(v);
+                } else {
+                    RotateRight(v);
+                    RotateLeft(v);
+                }
+            } else {
+                if (!g) {
+                    RotateLeft(v);
+                } else if (p == tree[g].ch[0]) {
+                    RotateLeft(v);
+                    RotateRight(v);
+                } else {
+                    RotateLeft(p);
+                    RotateLeft(v);
+                }
+            }
+        }
+    }
+
+    int FindK(int k, int v) {
+        PushDown(v);
+        int l = tree[v].ch[0];
+        int r = tree[v].ch[1];
+        if (k == tree[l].size + 1) {
+            return v;
+        }
+        if (k > tree[l].size) {
+            return FindK(k - tree[l].size - 1, r);
+        } else {
+            return FindK(k, l);
+        }
+    }
+
+    pair<int, int> Split(int k, int root) {
+        int v = FindK(k, root);
+        Splay(v);
+        int u = tree[v].ch[1];
+        tree[u].p = 0;
+        tree[v].ch[1] = 0;
+        PushUp(v);
+        return make_pair(v, u);
+    }
+
+    int Merge(int v, int u) {
+        int sz = tree[v].size;
+        int root = FindK(sz, v);
+        Splay(root);
+        tree[root].ch[1] = u;
+        tree[u].p = root;
+        PushUp(root);
+        return root;
+    }
+
+    void Expose(int v){
+        Splay(v);
+        if (tree[v].ch[1]){
+            int u = tree[v].ch[1];
+            tree[v].ch[1] = 0;
+            tree[u].pp = v;
+            tree[u].p = 0;
+        }
+        while (tree[v].pp){
+            int u = tree[v].pp;
+            Splay(u);
+            int end = tree[u].ch[1];
+            if (end) {
+                tree[end].pp = u;
+                tree[end].p = 0;
+            }
+            tree[u].ch[1] = v;
+            tree[v].pp = 0;
+            tree[v].p = u;
+            Splay(v);
+        }
+    }
+
+    int FindRoot(int v){
+        Expose(v);
+        while (tree[v].ch[0]){
+            v = tree[v].ch[0];
+        }
+        return v;
+    }
+
+    void Link(int v,int u){
+        Expose(v);
+        Expose(u);
+        tree[v].ch[0] = u;
+        tree[u].p = v;
+        tree[u].pp = 0;
+    }
+
+    void Cut(int v){
+        Expose(v);
+        int u = tree[v].ch[0];
+        tree[u].p = 0;
+        tree[v].ch[0] = 0;
+    }
+
+    int LCA(int p, int q)
+    {
+        Expose(p);
+        Expose(q);
+        Splay(p);
+        if (!tree[p].pp){
+            return p;
+        }
+        return tree[p].pp;
+    }
+
+};
+
+void solve() {
+    int n,m;
+    cin >> n >> m;
+    SplayTree tree = SplayTree();
+    vector<int> vec(n+1);
+    for (int i = 1; i <= n; ++i) {
+        vec[i] = i;
+    }
+    tree.Build(vec);
+    while (m--){
+        int l,r;
+        string s;
+        cin >> s;
+        if (s=="link"){
+            int a,b;
+            cin >> a >> b;
+            tree.Link(a,b);
+        }else if (s=="cut"){
+            int a;
+            cin >> a;
+            tree.Cut(a);
+        }else{
+            int a,b;
+            cin >> a >> b;
+            cout << tree.LCA(a,b) << endl;
+        }
+    }
+}
+
+signed main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    int qq = 1;
+    //cin >> qq;
+    while (qq--) {
+        solve();
+    }
+}
+
