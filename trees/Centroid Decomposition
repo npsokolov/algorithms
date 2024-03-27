@@ -1,0 +1,133 @@
+//#pragma GCC target("BIDIZLYA,MAKE,MY,CODE,FASTER")
+//#pragma GCC target("MINAKOV,PRIDAI,MNE,SIL")
+//#pragma GCC target("LATISHEV,PODNIMI,MNE,REITING")
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<array>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include<chrono>
+
+using namespace std;
+#define endl '\n'
+#define int long long
+constexpr int SIZE = 1e5 + 5;
+vector<int> g[SIZE];
+bool deleted[SIZE];
+int sz[SIZE];
+int n, k;
+vector<int> comps[SIZE];
+vector<int> ans(SIZE,1e9);
+map<int,int> deep[SIZE];
+void GetSize(int v, int p = -1) {
+    sz[v] = 1;
+    for (int u: g[v]) {
+        if (u != p && !deleted[u]) {
+            GetSize(u, v);
+            sz[v] += sz[u];
+        }
+    }
+}
+
+int FindCentroid(int v, int p, int cmpSize) {
+    for (int u: g[v]) {
+        if (u != p && !deleted[u] && sz[u] > cmpSize / 2) {
+            return FindCentroid(u, v, cmpSize);
+        }
+    }
+    return v;
+}
+
+void MakeComp(int v,int c,int p = -1){
+    comps[v].push_back(c);
+    for (int u : g[v]){
+        if (deleted[u] || u==p) continue;
+        MakeComp(u,c,v);
+    }
+}
+
+void CalcMin(int v,int c,int p = -1,int d = 0){
+    deep[c][v] = d;
+    for (int u : g[v]){
+        if (deleted[u] || p==u) continue;
+        CalcMin(u,c,v,d+1);
+    }
+}
+
+void MakeCentroidDecomposition(int v = 0) {
+    if (v == 0) g[0].push_back(1);
+
+
+    for (int u: g[v]) {
+        if (deleted[u]) continue;
+        GetSize(u);
+        int c = FindCentroid(u, -1, sz[u]);
+        deleted[c] = true;
+        MakeComp(c,c);
+        CalcMin(c,c);
+        if (deep[c].find(1)!=deep[c].end()){
+            ans[c] = deep[c][1];
+        }
+        MakeCentroidDecomposition(c);
+    }
+
+
+    if (!v) g[0].pop_back();
+}
+
+void solve() {
+    int m;
+    cin >> n >> m;
+    memset(deleted, false, sizeof(deleted));
+    for (int i = 0; i < n - 1; ++i) {
+        int v, u;
+        cin >> v >> u;
+        g[v].push_back(u);
+        g[u].push_back(v);
+    }
+    MakeCentroidDecomposition();
+    while (m--){
+        int type;
+        cin >> type;
+        if (type==1){
+            int v;cin >> v;
+            for (int c : comps[v]){
+                ans[c] = min(ans[c],deep[c][v]);
+            }
+        }else{
+            int found = 1e18;
+            int v;cin >> v;
+            for (int c : comps[v]){
+                found = min(found,deep[c][v]+ans[c]);
+            }
+            cout << found << endl;
+        }
+    }
+}
+
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+#ifndef ONLINE_JUDGE
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+#endif // ONLINE_JUDGE
+    //int q = 1; cin >> q; while (q--)
+    solve();
+    return 0;
+}
