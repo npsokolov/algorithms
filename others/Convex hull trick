@@ -1,0 +1,96 @@
+/*#pragma GCC optimize("O3,unroll-loops")
+#pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
+#define _CRT_SECURE_NO_WARNINGS*/
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<array>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include<chrono>
+#include <unistd.h>
+
+using namespace std;
+#define endl '\n'
+#define int long long
+#define ld long double
+constexpr int N = 1e5 + 1;
+int divide(int a, int b) {
+    int delta = 0;
+    if (a % b != 0) delta = 1;
+    if ((a > 0 && b > 0) || (a < 0 && b < 0)) return a/b +delta;
+    return -(abs(a) / abs(b));
+}
+void solve() {
+    int n;
+    cin >> n;
+    vector<int> x(n), k(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> x[i];
+    }
+    for (int i = 0; i < n; ++i) {
+        cin >> k[i];
+    }
+    if (n==1){
+        cout << 0 << endl;
+        return;
+    }
+    vector<int> b(n,1e18);
+    int sz = 1;
+    vector<int> left(n,1e18),right(n);
+    vector<int> st(n);
+    st[0] = 0;
+    left[0] = -1e18;right[0] = 1e18;
+    b[0] = 0;
+    int pos = 0;
+    for (int i = 1; i < n; ++i) {
+        while (right[pos]<x[i]){
+            pos++;
+        }
+        int j = st[pos];
+        b[i] = k[j]*x[i]+b[j];
+        int cur = -1e18;
+        while (true){
+            j = st[sz-1];
+            cur = divide(b[j]-b[i],k[i]-k[j]);
+            if (cur>left[sz-1]) break;
+            sz--;
+            pos = min(pos,sz-1);
+        }
+        st[sz] = i;
+        left[sz] = cur;
+        right[sz] = 1e18;
+        right[sz-1] = cur-1;
+        sz++;
+    }
+    cout << b[n-1] << endl;
+
+}
+
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+#ifndef ONLINE_JUDGE
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+#endif // ONLINE_JUDGE
+    int q = 1;
+    //cin >> q;
+    while (q--)
+        solve();
+    return 0;
+}
