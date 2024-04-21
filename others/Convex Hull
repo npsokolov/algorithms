@@ -1,0 +1,97 @@
+/*#pragma GCC optimize("O3,unroll-loops")
+#pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
+#define _CRT_SECURE_NO_WARNINGS*/
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<array>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include<chrono>
+#include <unistd.h>
+
+using namespace std;
+#define endl '\n'
+#define int long long
+#define ld long double
+constexpr int N = 1e5 + 1;
+struct Point{
+    int x,y;
+    int operator^(const Point& other) const{
+        return x*other.y-y*other.x;
+    }
+    Point(int x,int y) : x(x), y(y) {}
+    int Len() const{
+        return x*x+y*y;
+    }
+    Point operator-(const Point& other)const {
+        return {x-other.x,y-other.y};
+    }
+};
+void solve() {
+    int n;
+    cin >> n;
+    vector<Point> cor;
+    Point key = {(int)1e18,(int)1e18};
+    for (int i = 0; i < n; ++i) {
+        int x,y;
+        cin >> x >> y;
+        if (x<key.x || x==key.x && y<key.y){
+            key = {x,y};
+        }
+        cor.emplace_back(x,y);
+    }
+    for (auto& [x,y] : cor){
+        x-=key.x;
+        y-=key.y;
+    }
+    std::sort(cor.begin(), cor.end(), [](const Point& p1,const Point& p2){
+        int vec = p1^p2;
+        return vec>0 || vec==0 && p1.Len()<p2.Len();
+    });
+    vector<Point> hull;
+    for (auto& p : cor){
+        while (hull.size()>2 && ((p-hull.back())^(hull[(int)hull.size()-2]-hull.back()))<=0){
+            hull.pop_back();
+        }
+        hull.emplace_back(p);
+    }
+    ld ans = 0;
+    int m = hull.size();
+    for (int i = 0; i < m; ++i) {
+        Point o = hull[(i+1)%m];
+        ans+=sqrt((hull[i]-o).Len());
+    }
+    cout.precision(15);
+    cout << ans << endl;
+
+
+}
+
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cout.tie(nullptr);
+#ifndef ONLINE_JUDGE
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+#endif // ONLINE_JUDGE
+    int q = 1;
+    //cin >> q;
+    while (q--)
+        solve();
+    return 0;
+}
