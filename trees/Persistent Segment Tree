@@ -32,7 +32,7 @@ struct Node {
     Node() {}
 };
 
-vector<int> a, tree(4e5 + 100, 0);
+vector<int> a;
 vector<Node *> root(1e5 + 100, nullptr);
 
 void build(Node *v, int tl, int tr) {
