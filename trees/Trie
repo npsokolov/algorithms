@@ -1,0 +1,218 @@
+//#pragma GCC optimize("O3,unroll-loops")
+//#pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
+//#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<array>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include<chrono>
+
+using namespace std;
+#define endl '\n'
+#define int long long
+#define ld long double
+template <int LOG>
+class Trie{
+    static constexpr int NUL = -1;
+    struct Node{
+        int next[2];
+        int term = 0;
+        int termInSubtree = 0;
+        int p;
+        Node(int pr = -1) : p(pr){
+            next[1] = next[0] = NUL;
+        }
+    };
+    vector<Node> trie;
+    int changed[LOG];
+    map<int,int> fnd;
+public:
+
+    Trie() {
+        trie.emplace_back();
+        memset(changed,0,sizeof(changed));
+    }
+
+    void Add(int x,int key){
+        int cur = 0;
+        int deep = 0;
+        trie[cur].termInSubtree++;
+        for (int i = LOG-1; i >=0; i--)
+        {
+            int id = x>>i&1;
+            id^=changed[deep];
+            if(trie[cur].next[id] == NUL){
+                trie[cur].next[id] = trie.size();
+                trie.emplace_back(cur);
+            }
+            deep++;
+            cur = trie[cur].next[id];
+            trie[cur].termInSubtree++;
+        }
+        fnd[key] = cur;
+        trie[cur].term++;
+    }
+
+    void Delete(int x,int key){//нельзя становится пустым бором
+        int cur = 0;
+        int deep = 0;
+        trie[cur].termInSubtree--;
+        for (int i = LOG-1; i >=0; i--)
+        {
+            int id = x>>i&1;
+            id^=changed[deep];
+            assert(trie[cur].next[id] != NUL);
+            if (trie[trie[cur].next[id]].termInSubtree==1){
+                trie[cur].next[id] = NUL;
+                fnd.erase(key);
+                return;
+            }
+            deep++;
+            cur = trie[cur].next[id];
+            trie[cur].termInSubtree--;
+        }
+        fnd[key] = cur;
+        trie[cur].term--;
+    }
+    bool Empty(){
+        return fnd.empty();
+    }
+    size_t Size(){
+        return fnd.size();
+    }
+    int FindMax(){
+        if (Empty())return 0;
+        int cur = 0;
+        int deep = 0;
+        int ans = 0;
+        for (int i = LOG-1; i >=0; i--)
+        {
+            int id = 1;
+            id^=changed[deep];
+            if(trie[cur].next[id] == NUL){
+                id^=1ll;
+            }else{
+                ans|=1ll<<i;
+            }
+            deep++;
+            cur = trie[cur].next[id];
+        }
+        return ans;
+    }
+
+    int XOROF(int v){
+        int cur = fnd[v];
+        int deep = LOG-1;
+        int ans = 0;
+        while (cur){
+            int prev = cur;
+            cur = trie[cur].p;
+            int id = 1;
+            id^=changed[deep];
+            if (trie[cur].next[id]==prev){
+                ans|=1ll<<(LOG-1-deep);
+            }
+            deep--;
+        }
+        return ans;
+    }
+
+    void Change(int x){
+        for (int i = 0; i < LOG; ++i) {
+            changed[i]^=x>>(LOG-i-1)&1;
+        }
+    }
+};
+vector<vector<pair<int,int>>> g;
+vector<int> typ;
+void dfs(int v,int p,int ch,int sm,Trie<35>& t, Trie<35>& t1){
+    if (ch){
+        t1.Add(sm,v);
+        typ[v] = 1;
+    }else{
+        t.Add(sm,v);
+    }
+    for (auto& [u,w] : g[v]){
+        if (u==p) continue;
+        dfs(u,v,ch^1,sm^w,t,t1);
+    }
+}
+void solve(){
+    int n,q;
+    cin >> n >> q;
+    Trie<35> t,t1;
+    g.assign(n+1,{});
+    typ.assign(n+1,0);
+    for (int i = 0; i < n-1; i++)
+    {
+        int v,u,w;
+        cin >> v >> u >> w;
+        g[v].emplace_back(u,w);
+        g[u].emplace_back(v,w);
+    }
+    dfs(1,-1,0,0,t,t1);
+    while (q--){
+        char type;
+        cin >> type;
+        if (type=='^'){
+            int x;
+            cin >> x;
+            t1.Change(x);
+        }else{
+            int v,x;
+            cin >> v >> x;
+            int sub;
+            if (typ[v]==1){
+                sub = t1.XOROF(v);
+                x^=sub;
+                t1.Delete(sub,v);
+            }else{
+                sub = t.XOROF(v);
+                x^=sub;
+                t.Delete(sub,v);
+            }
+            t.Change(x);
+            t1.Change(x);
+            int mx = 0;
+            mx = t.FindMax();
+            mx = max(mx,t1.FindMax());
+            t.Change(x);
+            t1.Change(x);
+            if (typ[v]==1){
+                t1.Add(sub,v);
+            }else{
+                t.Add(sub,v);
+            }
+            cout << mx << " ";
+        }
+    }cout << endl;
+    
+    
+
+}
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr); cout.tie(nullptr);
+#ifndef ONLINE_JUDGE
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+#endif // ONLINE_JUDGE
+    int q = 1; cin >> q; while (q--)
+        solve();
+    return 0;
+}
