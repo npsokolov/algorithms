@@ -1,0 +1,77 @@
+//#pragma GCC optimize("O3,unroll-loops")
+//#pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
+//#define _CRT_SECURE_NO_WARNINGS
+#include<iostream>
+#include<fstream>
+#include<vector>
+#include<stack>
+#include<queue>
+#include<set>
+#include<map>
+#include<array>
+#include<unordered_set>
+#include<unordered_map>
+#include<cstring>
+#include<string>
+#include<memory>
+#include<iomanip>
+#include<cassert>
+#include<cmath>
+#include<random>
+#include<algorithm>
+#include<chrono>
+
+using namespace std;
+#define endl '\n'
+#define int long long
+#define ld long double
+
+constexpr int md = 1000000007;
+
+int binpow(int a, int b){
+    int ans = 1;
+    while (b){
+        if (b&1) (ans=(ans*a)%md);
+        a=(a*a)%md;
+        b>>=1;
+    }
+    return ans;
+}
+
+constexpr int N = 200005;
+int fact[N], inv[N];
+
+void precalc() {
+  fact[0] = 1;
+  for (int i = 1; i < N; i++) fact[i] = fact[i - 1] * i % md;
+  inv[N - 1] = binpow(fact[N - 1], md - 2);
+  for (int i = N - 2; i >= 0; i--) inv[i] = inv[i + 1] * (i + 1) % md;
+}
+
+int A(int n, int k) {
+  if (k < 0 || k > n) return 0;
+  return fact[n] * inv[n - k] % md;
+}
+
+int C(int n, int k) {
+  if (k < 0 || k > n) return 0;
+  return fact[n] * (inv[k] * inv[n - k] % md) % md;
+}
+
+void solve(){
+
+}
+
+
+signed main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr); cout.tie(nullptr);
+#ifndef ONLINE_JUDGE
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+#endif // ONLINE_JUDGE
+    precalc();
+    int q = 1; cin >> q; while (q--)
+        solve();
+    return 0;
+}
